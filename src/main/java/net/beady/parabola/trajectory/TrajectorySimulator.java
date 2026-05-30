@@ -63,7 +63,7 @@ public final class TrajectorySimulator {
             ChargedProjectiles charged = stack.get(DataComponents.CHARGED_PROJECTILES);
             if (charged == null || charged.isEmpty()) return null;
 
-            boolean isFirework = charged.getProjectiles().stream()
+            boolean isFirework = charged.items().stream()
                     .anyMatch(p -> p.is(Items.FIREWORK_ROCKET));
             boolean multishot = hasEnchantment(stack, Enchantments.MULTISHOT);
 
@@ -212,7 +212,7 @@ public final class TrajectorySimulator {
 
     private static int computeFireworkLifetime(ChargedProjectiles charged) {
         // Find the first firework rocket and read its flight_duration
-        for (ItemStack proj : charged.getProjectiles()) {
+        for (ItemStack proj : charged.items()) {
             Fireworks fw = proj.get(DataComponents.FIREWORKS);
             if (fw != null) {
                 int gunpowder = fw.flightDuration() & 0xFF; // byte → unsigned int
