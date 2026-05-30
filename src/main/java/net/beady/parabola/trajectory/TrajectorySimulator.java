@@ -22,7 +22,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +32,7 @@ public final class TrajectorySimulator {
 
     private TrajectorySimulator() {}
 
-    public static @Nullable TrajectoryResult simulate(LocalPlayer player, ClientLevel level) {
+    public static TrajectoryResult simulate(LocalPlayer player, ClientLevel level) {
         if (player == null || level == null) return null;
         if (player.isDeadOrDying()) return null;
 
@@ -145,7 +145,7 @@ public final class TrajectorySimulator {
 
     // ── Simulation loops ─────────────────────────────────────────────────────
 
-    private record ArcResult(List<Vec3> points, @Nullable String entityName) {}
+    private record ArcResult(List<Vec3> points, String entityName) {}
 
     private static ArcResult simulateArc(Vec3 origin, Vec3 initialVel,
                                           ProjectileType type, ClientLevel level, LocalPlayer player) {
@@ -213,7 +213,7 @@ public final class TrajectorySimulator {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static @Nullable String checkEntityHit(ClientLevel level, LocalPlayer player, Vec3 pos) {
+    private static String checkEntityHit(ClientLevel level, LocalPlayer player, Vec3 pos) {
         AABB searchBox = AABB.ofSize(pos, 0.8, 1.8, 0.8);
         List<LivingEntity> entities = level.getEntitiesOfClass(
                 LivingEntity.class, searchBox,
@@ -260,7 +260,7 @@ public final class TrajectorySimulator {
         return new Vec3(v.x * cos + v.z * sin, v.y, -v.x * sin + v.z * cos);
     }
 
-    private static @Nullable BlockPos impactBlock(List<Vec3> arc) {
+    private static BlockPos impactBlock(List<Vec3> arc) {
         if (arc.isEmpty()) return null;
         Vec3 last = arc.get(arc.size() - 1);
         return BlockPos.containing(last);

@@ -3,7 +3,6 @@ package net.beady.parabola.trajectory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 public record TrajectoryResult(
@@ -13,7 +12,7 @@ public record TrajectoryResult(
         ProjectileType type,
         boolean isMultishot,
         boolean isRiptide,
-        @Nullable String hitEntityName
+        String hitEntityName  // null = block hit
 ) {
     public List<Vec3> centerArc() {
         return arcs.isEmpty() ? List.of() : arcs.get(0);
