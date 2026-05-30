@@ -1,12 +1,52 @@
 {
-  "modmenu.nameTranslation.parabola": "Parabola",
-  "modmenu.descriptionTranslation.parabola": "Physics-accurate trajectory preview for every projectile.",
+  "text.autoconfig.parabola.title": "Parabola",
 
-  "config.parabola.title": "Parabola Settings",
-  "config.parabola.enabled": "Enable Parabola",
-  "config.parabola.enabled.tooltip": "Master toggle — enables or disables the entire mod.",
-  "config.parabola.showWorldArc": "Show World Trajectory Arc",
-  "config.parabola.showWorldArc.tooltip": "Render the trajectory arc and impact block highlight in the world.",
-  "config.parabola.showHudPanel": "Show HUD Mini-view",
-  "config.parabola.showHudPanel.tooltip": "Show the mini impact-scope panel in the bottom-right corner of the screen."
+  "text.autoconfig.parabola.option.enabled": "Enable Parabola",
+  "text.autoconfig.parabola.option.enabled.@Tooltip[0]": "Master toggle — disabling this hides all overlays.",
+
+  "text.autoconfig.parabola.option.showWorldArc": "Show World Arc",
+  "text.autoconfig.parabola.option.showWorldArc.@Tooltip[0]": "Render the trajectory arc and impact highlight in the world.",
+
+  "text.autoconfig.parabola.option.showHudPanel": "Show HUD Panel",
+  "text.autoconfig.parabola.option.showHudPanel.@Tooltip[0]": "Show the mini scope panel in the bottom-right corner.",
+
+  "text.autoconfig.parabola.option.showEntityHit": "Show Entity Hit Warning",
+  "text.autoconfig.parabola.option.showEntityHit.@Tooltip[0]": "Highlight the impact box red and label the entity name when the trajectory would hit a mob.",
+
+  "text.autoconfig.parabola.option.arcStyle": "Arc Style",
+
+  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks": "Dot Spacing (ticks)",
+  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks.@Tooltip[0]": "Render one dot every N simulation ticks. Lower = denser arc, higher = sparser.",
+
+  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit": "Dot Size",
+  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit.@Tooltip[0]": "Radius of each dot in hundredths of a block (6 = 0.06 blocks).",
+
+  "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha": "Impact Box Opacity (%)",
+  "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha.@Tooltip[0]": "Opacity of the filled box at the impact block (0 = invisible, 100 = solid).",
+
+  "text.autoconfig.parabola.option.arcStyle.hudPanelAlpha": "HUD Panel Opacity (%)",
+  "text.autoconfig.parabola.option.arcStyle.hudPanelAlpha.@Tooltip[0]": "Opacity of the HUD panel background (10 = nearly transparent, 100 = opaque).",
+
+  "text.autoconfig.parabola.option.colors": "Projectile Colors",
+
+  "text.autoconfig.parabola.option.colors.bow": "Bow",
+  "text.autoconfig.parabola.option.colors.bow.@Tooltip[0]": "Arc color for bow arrows.",
+
+  "text.autoconfig.parabola.option.colors.crossbowArrow": "Crossbow — Arrow",
+  "text.autoconfig.parabola.option.colors.crossbowArrow.@Tooltip[0]": "Arc color for crossbow arrows.",
+
+  "text.autoconfig.parabola.option.colors.crossbowFirework": "Crossbow — Firework",
+  "text.autoconfig.parabola.option.colors.crossbowFirework.@Tooltip[0]": "Arc color for crossbow firework rockets.",
+
+  "text.autoconfig.parabola.option.colors.trident": "Trident",
+  "text.autoconfig.parabola.option.colors.trident.@Tooltip[0]": "Arc color for tridents.",
+
+  "text.autoconfig.parabola.option.colors.enderPearl": "Ender Pearl",
+  "text.autoconfig.parabola.option.colors.enderPearl.@Tooltip[0]": "Arc color for ender pearls.",
+
+  "text.autoconfig.parabola.option.colors.snowballEgg": "Snowball / Egg",
+  "text.autoconfig.parabola.option.colors.snowballEgg.@Tooltip[0]": "Arc color for snowballs and eggs.",
+
+  "text.autoconfig.parabola.option.colors.windCharge": "Wind Charge",
+  "text.autoconfig.parabola.option.colors.windCharge.@Tooltip[0]": "Arc color for wind charges."
 }

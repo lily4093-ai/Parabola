@@ -1,12 +1,52 @@
 {
-  "modmenu.nameTranslation.parabola": "Parabola",
-  "modmenu.descriptionTranslation.parabola": "모든 발사체의 물리 기반 궤적 미리보기.",
+  "text.autoconfig.parabola.title": "Parabola",
 
-  "config.parabola.title": "Parabola 설정",
-  "config.parabola.enabled": "Parabola 활성화",
-  "config.parabola.enabled.tooltip": "마스터 토글 — 모드 전체를 활성화하거나 비활성화합니다.",
-  "config.parabola.showWorldArc": "월드 궤적 호 표시",
-  "config.parabola.showWorldArc.tooltip": "월드에서 궤적 호와 착탄 블록 하이라이트를 렌더링합니다.",
-  "config.parabola.showHudPanel": "HUD 미니 뷰 표시",
-  "config.parabola.showHudPanel.tooltip": "화면 우하단에 착탄 범위 미니 패널을 표시합니다."
+  "text.autoconfig.parabola.option.enabled": "Parabola 활성화",
+  "text.autoconfig.parabola.option.enabled.@Tooltip[0]": "마스터 토글 — 비활성화하면 모든 오버레이가 숨겨집니다.",
+
+  "text.autoconfig.parabola.option.showWorldArc": "월드 궤적 표시",
+  "text.autoconfig.parabola.option.showWorldArc.@Tooltip[0]": "월드에 궤적 호와 착탄 강조 표시를 렌더링합니다.",
+
+  "text.autoconfig.parabola.option.showHudPanel": "HUD 패널 표시",
+  "text.autoconfig.parabola.option.showHudPanel.@Tooltip[0]": "오른쪽 아래 모서리에 미니 조준 패널을 표시합니다.",
+
+  "text.autoconfig.parabola.option.showEntityHit": "몹 명중 경고 표시",
+  "text.autoconfig.parabola.option.showEntityHit.@Tooltip[0]": "궤적이 몹에 닿을 경우 착탄 박스를 빨간색으로 강조하고 몹 이름을 표시합니다.",
+
+  "text.autoconfig.parabola.option.arcStyle": "궤적 스타일",
+
+  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks": "점 간격 (틱)",
+  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks.@Tooltip[0]": "N 시뮬레이션 틱마다 점 하나를 렌더링합니다. 낮을수록 촘촘하고, 높을수록 듬성합니다.",
+
+  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit": "점 크기",
+  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit.@Tooltip[0]": "각 점의 반지름 (단위: 블록의 1/100, 6 = 0.06블록).",
+
+  "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha": "착탄 박스 불투명도 (%)",
+  "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha.@Tooltip[0]": "착탄 블록 강조 박스의 불투명도 (0 = 보이지 않음, 100 = 완전 불투명).",
+
+  "text.autoconfig.parabola.option.arcStyle.hudPanelAlpha": "HUD 패널 불투명도 (%)",
+  "text.autoconfig.parabola.option.arcStyle.hudPanelAlpha.@Tooltip[0]": "HUD 패널 배경의 불투명도 (10 = 거의 투명, 100 = 불투명).",
+
+  "text.autoconfig.parabola.option.colors": "발사체 색상",
+
+  "text.autoconfig.parabola.option.colors.bow": "활",
+  "text.autoconfig.parabola.option.colors.bow.@Tooltip[0]": "활 화살의 궤적 색상.",
+
+  "text.autoconfig.parabola.option.colors.crossbowArrow": "석궁 — 화살",
+  "text.autoconfig.parabola.option.colors.crossbowArrow.@Tooltip[0]": "석궁 화살의 궤적 색상.",
+
+  "text.autoconfig.parabola.option.colors.crossbowFirework": "석궁 — 폭죽",
+  "text.autoconfig.parabola.option.colors.crossbowFirework.@Tooltip[0]": "석궁 폭죽 로켓의 궤적 색상.",
+
+  "text.autoconfig.parabola.option.colors.trident": "삼지창",
+  "text.autoconfig.parabola.option.colors.trident.@Tooltip[0]": "삼지창의 궤적 색상.",
+
+  "text.autoconfig.parabola.option.colors.enderPearl": "엔더 진주",
+  "text.autoconfig.parabola.option.colors.enderPearl.@Tooltip[0]": "엔더 진주의 궤적 색상.",
+
+  "text.autoconfig.parabola.option.colors.snowballEgg": "눈덩이 / 달걀",
+  "text.autoconfig.parabola.option.colors.snowballEgg.@Tooltip[0]": "눈덩이와 달걀의 궤적 색상.",
+
+  "text.autoconfig.parabola.option.colors.windCharge": "돌풍구",
+  "text.autoconfig.parabola.option.colors.windCharge.@Tooltip[0]": "돌풍구의 궤적 색상."
 }

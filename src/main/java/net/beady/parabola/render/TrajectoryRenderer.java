@@ -49,14 +49,17 @@ public final class TrajectoryRenderer {
 
     private static final ByteBufferBuilder ALLOCATOR = new ByteBufferBuilder(RenderType.SMALL_BUFFER_SIZE);
     private static MappableRingBuffer ringBuffer;
-
     private static volatile RenderState renderState;
 
     private record RenderState(
             List<List<Vec3>> arcs,
             BlockPos impactPos,
             float r, float g, float b,
-            boolean multishot
+            boolean multishot,
+            int dotSpacing,
+            float dotRadius,
+            float impactAlpha,
+            boolean entityHit
     ) {}
 
     private TrajectoryRenderer() {}
@@ -68,10 +71,7 @@ public final class TrajectoryRenderer {
 
     private static void extract(LevelExtractionContext ctx) {
         ModConfig cfg = AutoConfig.getConfigHolder(ModConfig.class).getConfig();
-        if (!cfg.enabled || !cfg.showWorldArc) {
-            renderState = null;
-            return;
-        }
+        if (!cfg.enabled || !cfg.showWorldArc) { renderState = null; return; }
 
         TrajectoryResult result = TrajectoryCache.getCached();
         if (result == null || result.isRiptide() || result.arcs().isEmpty()) {
@@ -79,13 +79,21 @@ public final class TrajectoryRenderer {
             return;
         }
 
-        // Deep-copy arc lists: the draw phase runs on a different thread
         List<List<Vec3>> arcsCopy = result.arcs().stream()
                 .map(List::copyOf)
                 .collect(Collectors.toUnmodifiableList());
 
+        int rgb = cfg.rgbFor(result.type());
         ProjectileType type = result.type();
-        renderState = new RenderState(arcsCopy, result.impactPos(), type.r(), type.g(), type.b(), result.isMultishot());
+        renderState = new RenderState(
+                arcsCopy, result.impactPos(),
+                type.r(rgb), type.g(rgb), type.b(rgb),
+                result.isMultishot(),
+                cfg.arcStyle.dotEveryNTicks,
+                cfg.arcStyle.dotSizeUnit * 0.01f,
+                cfg.arcStyle.impactBoxAlpha / 100.0f,
+                result.hitEntity()
+        );
     }
 
     private static void draw(LevelRenderContext context) {
@@ -100,44 +108,45 @@ public final class TrajectoryRenderer {
         Matrix4fc mat = poseStack.last().pose();
 
         BufferBuilder buf = new BufferBuilder(
-                ALLOCATOR,
-                TRAJECTORY_PIPELINE.getVertexFormatMode(),
-                TRAJECTORY_PIPELINE.getVertexFormat()
-        );
+                ALLOCATOR, TRAJECTORY_PIPELINE.getVertexFormatMode(), TRAJECTORY_PIPELINE.getVertexFormat());
 
         float r = state.r(), g = state.g(), b = state.b();
 
-        // Trajectory arc dots (every 3rd point = every 3 ticks)
         List<List<Vec3>> arcs = state.arcs();
         if (state.multishot() && arcs.size() == 3) {
-            addArcDots(buf, mat, arcs.get(0), r, g, b, 1.0f);
-            addArcDots(buf, mat, arcs.get(1), r, g, b, 0.6f);
-            addArcDots(buf, mat, arcs.get(2), r, g, b, 0.6f);
+            addArcDots(buf, mat, arcs.get(0), r, g, b, 1.0f, state.dotSpacing(), state.dotRadius());
+            addArcDots(buf, mat, arcs.get(1), r, g, b, 0.6f, state.dotSpacing(), state.dotRadius());
+            addArcDots(buf, mat, arcs.get(2), r, g, b, 0.6f, state.dotSpacing(), state.dotRadius());
         } else if (!arcs.isEmpty()) {
-            addArcDots(buf, mat, arcs.get(0), r, g, b, 1.0f);
+            addArcDots(buf, mat, arcs.get(0), r, g, b, 1.0f, state.dotSpacing(), state.dotRadius());
         }
 
-        // Impact block highlight (semi-transparent filled box)
         if (state.impactPos() != null) {
             BlockPos imp = state.impactPos();
+            // Entity hit: bright pulsing color; block hit: configured alpha
+            float hitAlpha = state.entityHit() ? 0.75f : state.impactAlpha();
+            float hr = state.entityHit() ? 1.0f : r;
+            float hg = state.entityHit() ? 0.2f : g;
+            float hb = state.entityHit() ? 0.2f : b;
             addFilledBox(buf, mat,
                     imp.getX(), imp.getY(), imp.getZ(),
                     imp.getX() + 1f, imp.getY() + 1f, imp.getZ() + 1f,
-                    r, g, b, 0.4f);
+                    hr, hg, hb, hitAlpha);
         }
 
         poseStack.popPose();
-
         submitDraw(Minecraft.getInstance(), buf);
     }
 
     private static void addArcDots(BufferBuilder buf, Matrix4fc mat,
-                                    List<Vec3> arc, float r, float g, float b, float a) {
-        float rad = 0.06f;
-        for (int i = 0; i < arc.size(); i += 3) {
+                                    List<Vec3> arc, float r, float g, float b, float a,
+                                    int spacing, float rad) {
+        for (int i = 0; i < arc.size(); i += spacing) {
             Vec3 p = arc.get(i);
-            float px = (float) p.x, py = (float) p.y, pz = (float) p.z;
-            addFilledBox(buf, mat, px - rad, py - rad, pz - rad, px + rad, py + rad, pz + rad, r, g, b, a);
+            addFilledBox(buf, mat,
+                    (float) p.x - rad, (float) p.y - rad, (float) p.z - rad,
+                    (float) p.x + rad, (float) p.y + rad, (float) p.z + rad,
+                    r, g, b, a);
         }
     }
 
@@ -184,7 +193,8 @@ public final class TrajectoryRenderer {
         int vbSize = drawState.vertexCount() * format.getVertexSize();
         if (ringBuffer == null || ringBuffer.size() < vbSize) {
             if (ringBuffer != null) ringBuffer.close();
-            ringBuffer = new MappableRingBuffer(() -> "parabola trajectory", GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_MAP_WRITE, vbSize);
+            ringBuffer = new MappableRingBuffer(() -> "parabola trajectory",
+                    GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_MAP_WRITE, vbSize);
         }
 
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
@@ -192,7 +202,6 @@ public final class TrajectoryRenderer {
                 ringBuffer.currentBuffer().slice(0, mesh.vertexBuffer().remaining()), false, true)) {
             MemoryUtil.memCopy(mesh.vertexBuffer(), view.data());
         }
-        GpuBuffer vertices = ringBuffer.currentBuffer();
 
         RenderSystem.AutoStorageIndexBuffer idxStore = RenderSystem.getSequentialBuffer(TRAJECTORY_PIPELINE.getVertexFormatMode());
         GpuBuffer indices = idxStore.getBuffer(drawState.indexCount());
@@ -212,7 +221,7 @@ public final class TrajectoryRenderer {
             pass.setPipeline(TRAJECTORY_PIPELINE);
             RenderSystem.bindDefaultUniforms(pass);
             pass.setUniform("DynamicTransforms", dynTransforms);
-            pass.setVertexBuffer(0, vertices);
+            pass.setVertexBuffer(0, ringBuffer.currentBuffer());
             pass.setIndexBuffer(indices, idxType);
             pass.drawIndexed(0, 0, drawState.indexCount(), 1);
         }
