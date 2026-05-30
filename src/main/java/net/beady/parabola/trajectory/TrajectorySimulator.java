@@ -212,11 +212,13 @@ public final class TrajectorySimulator {
 
     private static int computeFireworkLifetime(ChargedProjectiles charged) {
         // Find the first firework rocket and read its flight_duration
-        for (ItemStack proj : charged.items()) {
-            Fireworks fw = proj.get(DataComponents.FIREWORKS);
-            if (fw != null) {
-                int gunpowder = fw.flightDuration() & 0xFF; // byte → unsigned int
-                return 10 * (gunpowder + 1) + 5; // midpoint of 0–11 random extra ticks
+        for (var proj : charged.items()) {
+            if (proj.is(Items.FIREWORK_ROCKET)) {
+                Fireworks fw = proj.get(DataComponents.FIREWORKS);
+                if (fw != null) {
+                    int gunpowder = fw.flightDuration() & 0xFF;
+                    return 10 * (gunpowder + 1) + 5;
+                }
             }
         }
         return 15; // fallback: 1 gunpowder
