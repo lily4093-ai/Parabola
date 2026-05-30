@@ -1,0 +1,12 @@
+{
+  "modmenu.nameTranslation.parabola": "Parabola",
+  "modmenu.descriptionTranslation.parabola": "Physics-accurate trajectory preview for every projectile.",
+
+  "config.parabola.title": "Parabola Settings",
+  "config.parabola.enabled": "Enable Parabola",
+  "config.parabola.enabled.tooltip": "Master toggle — enables or disables the entire mod.",
+  "config.parabola.showWorldArc": "Show World Trajectory Arc",
+  "config.parabola.showWorldArc.tooltip": "Render the trajectory arc and impact block highlight in the world.",
+  "config.parabola.showHudPanel": "Show HUD Mini-view",
+  "config.parabola.showHudPanel.tooltip": "Show the mini impact-scope panel in the bottom-right corner of the screen."
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "parabola",
+  "version": "${version}",
+  "name": "Parabola",
+  "description": "Physics-accurate trajectory preview for every projectile — with a real-time impact scope in the corner of your screen.",
+  "authors": ["Beady"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/parabola/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["net.beady.parabola.ParabolaMod"],
+    "modmenu": ["net.beady.parabola.config.ModMenuIntegration"]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "fabric-api": ">=0.150.0",
+    "minecraft": "~26.1",
+    "cloth-config": "*",
+    "modmenu": "*"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "modmenu.nameTranslation.parabola": "Parabola",
+  "modmenu.descriptionTranslation.parabola": "모든 발사체의 물리 기반 궤적 미리보기.",
+
+  "config.parabola.title": "Parabola 설정",
+  "config.parabola.enabled": "Parabola 활성화",
+  "config.parabola.enabled.tooltip": "마스터 토글 — 모드 전체를 활성화하거나 비활성화합니다.",
+  "config.parabola.showWorldArc": "월드 궤적 호 표시",
+  "config.parabola.showWorldArc.tooltip": "월드에서 궤적 호와 착탄 블록 하이라이트를 렌더링합니다.",
+  "config.parabola.showHudPanel": "HUD 미니 뷰 표시",
+  "config.parabola.showHudPanel.tooltip": "화면 우하단에 착탄 범위 미니 패널을 표시합니다."
+}
