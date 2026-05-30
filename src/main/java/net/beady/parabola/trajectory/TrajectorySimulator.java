@@ -4,6 +4,8 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.component.ChargedProjectiles;
@@ -12,7 +14,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -222,7 +223,7 @@ public final class TrajectorySimulator {
         return 15; // fallback: 1 gunpowder
     }
 
-    private static boolean hasEnchantment(ItemStack stack, net.minecraft.resources.ResourceKey<Enchantment> key) {
+    private static boolean hasEnchantment(ItemStack stack, ResourceKey<Enchantment> key) {
         ItemEnchantments enchants = stack.get(DataComponents.ENCHANTMENTS);
         if (enchants == null) return false;
         for (Holder<Enchantment> h : enchants.keySet()) {

@@ -1,93 +1,223 @@
 package net.beady.parabola.render;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.stream.Collectors;
+
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
+import org.lwjgl.system.MemoryUtil;
+
 import me.shedaniel.autoconfig.AutoConfig;
 import net.beady.parabola.config.ModConfig;
 import net.beady.parabola.trajectory.ProjectileType;
 import net.beady.parabola.trajectory.TrajectoryResult;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
-import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MappableRingBuffer;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.List;
-
 public final class TrajectoryRenderer {
+
+    private static final RenderPipeline TRAJECTORY_PIPELINE = RenderPipelines.register(
+            RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
+                    .withLocation(Identifier.fromNamespaceAndPath("parabola", "pipeline/trajectory_arc"))
+                    .withDepthStencilState(Optional.empty())
+                    .build()
+    );
+
+    private static final ByteBufferBuilder ALLOCATOR = new ByteBufferBuilder(RenderType.SMALL_BUFFER_SIZE);
+    private static MappableRingBuffer ringBuffer;
+
+    private static volatile RenderState renderState;
+
+    private record RenderState(
+            List<List<Vec3>> arcs,
+            BlockPos impactPos,
+            float r, float g, float b,
+            boolean multishot
+    ) {}
 
     private TrajectoryRenderer() {}
 
     public static void register() {
-        LevelRenderEvents.AFTER_TRANSLUCENT.register(TrajectoryRenderer::render);
+        LevelRenderEvents.END_EXTRACTION.register(TrajectoryRenderer::extract);
+        LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(TrajectoryRenderer::draw);
     }
 
-    private static void render(LevelRenderContext context) {
+    private static void extract(LevelExtractionContext ctx) {
         ModConfig cfg = AutoConfig.getConfigHolder(ModConfig.class).getConfig();
-        if (!cfg.enabled || !cfg.showWorldArc) return;
-
-        TrajectoryResult result = TrajectoryCache.getCached();
-        if (result == null || result.isRiptide()) return;
-        if (result.arcs().isEmpty()) return;
-
-        Camera camera = context.camera();
-        Vec3 camPos = camera.getPosition();
-
-        PoseStack poseStack = context.poseStack();
-        MultiBufferSource bufferSource = context.bufferSource();
-
-        poseStack.pushPose();
-        poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-
-        ProjectileType type = result.type();
-        VertexConsumer consumer =
-                bufferSource.getBuffer(RenderType.lines());
-
-        List<List<Vec3>> arcs = result.arcs();
-
-        if (result.isMultishot() && arcs.size() == 3) {
-            // Center arc at full opacity
-            renderArc(poseStack, consumer, arcs.get(0), type.r(), type.g(), type.b(), 1.0f, 0.1);
-            // Side arcs at 60% opacity
-            renderArc(poseStack, consumer, arcs.get(1), type.r(), type.g(), type.b(), 0.6f, 0.07);
-            renderArc(poseStack, consumer, arcs.get(2), type.r(), type.g(), type.b(), 0.6f, 0.07);
-        } else if (!arcs.isEmpty()) {
-            renderArc(poseStack, consumer, arcs.get(0), type.r(), type.g(), type.b(), 1.0f, 0.1);
+        if (!cfg.enabled || !cfg.showWorldArc) {
+            renderState = null;
+            return;
         }
 
-        // Impact block wireframe
-        if (result.hasImpact()) {
-            BlockPos imp = result.impactPos();
-            AABB box = new AABB(imp.getX(), imp.getY(), imp.getZ(),
-                                imp.getX() + 1, imp.getY() + 1, imp.getZ() + 1);
-            LevelRenderer.renderLineBox(poseStack, consumer, box,
-                    type.r(), type.g(), type.b(), 1.0f);
+        TrajectoryResult result = TrajectoryCache.getCached();
+        if (result == null || result.isRiptide() || result.arcs().isEmpty()) {
+            renderState = null;
+            return;
+        }
+
+        // Deep-copy arc lists: the draw phase runs on a different thread
+        List<List<Vec3>> arcsCopy = result.arcs().stream()
+                .map(List::copyOf)
+                .collect(Collectors.toUnmodifiableList());
+
+        ProjectileType type = result.type();
+        renderState = new RenderState(arcsCopy, result.impactPos(), type.r(), type.g(), type.b(), result.isMultishot());
+    }
+
+    private static void draw(LevelRenderContext context) {
+        RenderState state = renderState;
+        if (state == null) return;
+
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack poseStack = context.poseStack();
+
+        poseStack.pushPose();
+        poseStack.translate(-camera.x, -camera.y, -camera.z);
+        Matrix4fc mat = poseStack.last().pose();
+
+        BufferBuilder buf = new BufferBuilder(
+                ALLOCATOR,
+                TRAJECTORY_PIPELINE.getVertexFormatMode(),
+                TRAJECTORY_PIPELINE.getVertexFormat()
+        );
+
+        float r = state.r(), g = state.g(), b = state.b();
+
+        // Trajectory arc dots (every 3rd point = every 3 ticks)
+        List<List<Vec3>> arcs = state.arcs();
+        if (state.multishot() && arcs.size() == 3) {
+            addArcDots(buf, mat, arcs.get(0), r, g, b, 1.0f);
+            addArcDots(buf, mat, arcs.get(1), r, g, b, 0.6f);
+            addArcDots(buf, mat, arcs.get(2), r, g, b, 0.6f);
+        } else if (!arcs.isEmpty()) {
+            addArcDots(buf, mat, arcs.get(0), r, g, b, 1.0f);
+        }
+
+        // Impact block highlight (semi-transparent filled box)
+        if (state.impactPos() != null) {
+            BlockPos imp = state.impactPos();
+            addFilledBox(buf, mat,
+                    imp.getX(), imp.getY(), imp.getZ(),
+                    imp.getX() + 1f, imp.getY() + 1f, imp.getZ() + 1f,
+                    r, g, b, 0.4f);
         }
 
         poseStack.popPose();
 
-        // Flush lines batch
-        if (bufferSource instanceof MultiBufferSource.BufferSource immediate) {
-            immediate.endBatch(RenderType.lines());
+        submitDraw(Minecraft.getInstance(), buf);
+    }
+
+    private static void addArcDots(BufferBuilder buf, Matrix4fc mat,
+                                    List<Vec3> arc, float r, float g, float b, float a) {
+        float rad = 0.06f;
+        for (int i = 0; i < arc.size(); i += 3) {
+            Vec3 p = arc.get(i);
+            float px = (float) p.x, py = (float) p.y, pz = (float) p.z;
+            addFilledBox(buf, mat, px - rad, py - rad, pz - rad, px + rad, py + rad, pz + rad, r, g, b, a);
         }
     }
 
-    /**
-     * Renders each trajectory point as a tiny wireframe dot (small box).
-     * Every other point is skipped to reduce visual clutter at close range.
-     */
-    private static void renderArc(PoseStack poseStack,
-                                   VertexConsumer consumer,
-                                   List<Vec3> arc, float r, float g, float b, float a, double radius) {
-        for (int i = 0; i < arc.size(); i += 2) {
-            Vec3 p = arc.get(i);
-            AABB box = new AABB(p.x - radius, p.y - radius, p.z - radius,
-                                p.x + radius, p.y + radius, p.z + radius);
-            LevelRenderer.renderLineBox(poseStack, consumer, box, r, g, b, a);
+    private static void addFilledBox(BufferBuilder buf, Matrix4fc mat,
+                                      float x1, float y1, float z1,
+                                      float x2, float y2, float z2,
+                                      float r, float g, float b, float a) {
+        buf.addVertex(mat, x1, y1, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y1, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y2, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y2, z2).setColor(r, g, b, a);
+
+        buf.addVertex(mat, x2, y1, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y1, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y2, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y2, z1).setColor(r, g, b, a);
+
+        buf.addVertex(mat, x1, y1, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y1, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y2, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y2, z1).setColor(r, g, b, a);
+
+        buf.addVertex(mat, x2, y1, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y1, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y2, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y2, z2).setColor(r, g, b, a);
+
+        buf.addVertex(mat, x1, y2, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y2, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y2, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y2, z1).setColor(r, g, b, a);
+
+        buf.addVertex(mat, x1, y1, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y1, z1).setColor(r, g, b, a);
+        buf.addVertex(mat, x2, y1, z2).setColor(r, g, b, a);
+        buf.addVertex(mat, x1, y1, z2).setColor(r, g, b, a);
+    }
+
+    private static void submitDraw(Minecraft mc, BufferBuilder builder) {
+        MeshData mesh = builder.buildOrThrow();
+        MeshData.DrawState drawState = mesh.drawState();
+        VertexFormat format = drawState.format();
+
+        int vbSize = drawState.vertexCount() * format.getVertexSize();
+        if (ringBuffer == null || ringBuffer.size() < vbSize) {
+            if (ringBuffer != null) ringBuffer.close();
+            ringBuffer = new MappableRingBuffer(() -> "parabola trajectory", GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_MAP_WRITE, vbSize);
         }
+
+        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+        try (GpuBuffer.MappedView view = encoder.mapBuffer(
+                ringBuffer.currentBuffer().slice(0, mesh.vertexBuffer().remaining()), false, true)) {
+            MemoryUtil.memCopy(mesh.vertexBuffer(), view.data());
+        }
+        GpuBuffer vertices = ringBuffer.currentBuffer();
+
+        RenderSystem.AutoStorageIndexBuffer idxStore = RenderSystem.getSequentialBuffer(TRAJECTORY_PIPELINE.getVertexFormatMode());
+        GpuBuffer indices = idxStore.getBuffer(drawState.indexCount());
+        VertexFormat.IndexType idxType = idxStore.type();
+
+        GpuBufferSlice dynTransforms = RenderSystem.getDynamicUniforms().writeTransform(
+                RenderSystem.getModelViewMatrix(),
+                new Vector4f(1f, 1f, 1f, 1f),
+                new Vector3f(),
+                new Matrix4f()
+        );
+
+        try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+                () -> "parabola trajectory draw",
+                mc.getMainRenderTarget().getColorTextureView(), OptionalInt.empty(),
+                mc.getMainRenderTarget().getDepthTextureView(), OptionalDouble.empty())) {
+            pass.setPipeline(TRAJECTORY_PIPELINE);
+            RenderSystem.bindDefaultUniforms(pass);
+            pass.setUniform("DynamicTransforms", dynTransforms);
+            pass.setVertexBuffer(0, vertices);
+            pass.setIndexBuffer(indices, idxType);
+            pass.drawIndexed(0, 0, drawState.indexCount(), 1);
+        }
+
+        mesh.close();
+        ringBuffer.rotate();
     }
 }
