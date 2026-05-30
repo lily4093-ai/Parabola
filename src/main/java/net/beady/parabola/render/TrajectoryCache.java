@@ -5,16 +5,13 @@ import net.beady.parabola.trajectory.TrajectorySimulator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.item.Item;
 
-/**
- * Caches the last simulated trajectory. Recalculates only when pitch or yaw changes,
- * keeping rendering cost near zero when the player isn't moving their aim.
- */
 public final class TrajectoryCache {
 
     private static float lastPitch = Float.NaN;
     private static float lastYaw   = Float.NaN;
-    private static int   lastSlot  = -1;
+    private static Item  lastItem  = null;
     private static TrajectoryResult cached = null;
 
     private TrajectoryCache() {}
@@ -29,14 +26,14 @@ public final class TrajectoryCache {
             return null;
         }
 
-        float pitch = player.getXRot();
-        float yaw   = player.getYRot();
-        int   slot  = player.getInventory().selected;
+        float pitch   = player.getXRot();
+        float yaw     = player.getYRot();
+        Item  curItem = player.getMainHandItem().getItem();
 
-        if (pitch != lastPitch || yaw != lastYaw || slot != lastSlot) {
+        if (pitch != lastPitch || yaw != lastYaw || curItem != lastItem) {
             lastPitch = pitch;
             lastYaw   = yaw;
-            lastSlot  = slot;
+            lastItem  = curItem;
             cached = TrajectorySimulator.simulate(player, level);
         }
 
@@ -47,5 +44,6 @@ public final class TrajectoryCache {
         cached = null;
         lastPitch = Float.NaN;
         lastYaw   = Float.NaN;
+        lastItem  = null;
     }
 }

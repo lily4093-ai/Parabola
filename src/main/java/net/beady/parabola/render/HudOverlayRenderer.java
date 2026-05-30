@@ -55,7 +55,7 @@ public final class HudOverlayRenderer {
         if (result.isRiptide()) {
             String text = "⚡ Riptide";
             int tw = mc.font.width(text);
-            graphics.drawString(mc.font, text, sw - tw - MARGIN, sh - 20, 0xFF55FFFF);
+            graphics.text(mc.font, text, sw - tw - MARGIN, sh - 20, 0xFF55FFFF, false);
             return;
         }
 
@@ -73,12 +73,12 @@ public final class HudOverlayRenderer {
 
         // Distance label
         String distLabel = String.format("◎ %.1fm", result.impactDistance());
-        graphics.drawString(mc.font, distLabel, px + 6, py + 6, TEXT_COLOR);
+        graphics.text(mc.font, distLabel, px + 6, py + 6, TEXT_COLOR, false);
 
         // Multishot label
         if (result.isMultishot()) {
             String tag = "×3";
-            graphics.drawString(mc.font, tag, px + PANEL_W - mc.font.width(tag) - 6, py + 6, 0xFFFFAA00);
+            graphics.text(mc.font, tag, px + PANEL_W - mc.font.width(tag) - 6, py + 6, 0xFFFFAA00, false);
         }
 
         // Block name
@@ -86,7 +86,7 @@ public final class HudOverlayRenderer {
         BlockPos impact = result.impactPos();
         if (level != null) {
             BlockState state = level.getBlockState(impact);
-            graphics.drawString(mc.font, state.getBlock().getName().getString(), px + 6, py + 18, DIM_COLOR);
+            graphics.text(mc.font, state.getBlock().getName().getString(), px + 6, py + 18, DIM_COLOR, false);
         }
 
         // 2D block cross-section (5×5)
@@ -120,6 +120,6 @@ public final class HudOverlayRenderer {
         graphics.fill(cx - 1, cy - 1, cx + 2, cy + 2,     0xFFFF0000);
 
         // Projectile-type color bar at bottom
-        graphics.fill(px + 2, py + PANEL_H - 6, px + PANEL_W - 2, py + PANEL_H - 2, result.type().argb());
+        graphics.fill(px + 2, py + PANEL_H - 6, px + PANEL_W - 2, py + PANEL_H - 2, result.type().argb);
     }
 }

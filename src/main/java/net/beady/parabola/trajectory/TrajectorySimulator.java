@@ -7,7 +7,9 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.*;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ChargedProjectiles;
 import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -39,19 +41,17 @@ public final class TrajectorySimulator {
         Item item = stack.getItem();
 
         // ── Trident ─────────────────────────────────────────────────────────
-        if (item instanceof TridentItem) {
+        if (stack.is(Items.TRIDENT)) {
             if (hasEnchantment(stack, Enchantments.RIPTIDE)) {
                 if (player.isInWaterOrRain()) {
-                    // Riptide active: show text, no arc
                     return new TrajectoryResult(List.of(), null, 0, ProjectileType.TRIDENT, false, true);
                 }
-                // Riptide but not in water/rain — fall through to normal trident
             }
             return buildResult(player, level, stack, ProjectileType.TRIDENT, 1.0f, false);
         }
 
         // ── Bow ──────────────────────────────────────────────────────────────
-        if (item instanceof BowItem) {
+        if (stack.is(Items.BOW)) {
             if (!player.isUsingItem()) return null;
             float pull = computeBowPull(player);
             if (pull < 0.01f) return null;
@@ -59,13 +59,12 @@ public final class TrajectorySimulator {
         }
 
         // ── Crossbow ─────────────────────────────────────────────────────────
-        if (item instanceof CrossbowItem) {
-            if (!CrossbowItem.isCharged(stack)) return null;
+        if (stack.is(Items.CROSSBOW)) {
             ChargedProjectiles charged = stack.get(DataComponents.CHARGED_PROJECTILES);
             if (charged == null || charged.isEmpty()) return null;
 
-            boolean isFirework = charged.getItems().stream()
-                    .anyMatch(p -> p.getItem() instanceof FireworkRocketItem);
+            boolean isFirework = charged.getProjectiles().stream()
+                    .anyMatch(p -> p.is(Items.FIREWORK_ROCKET));
             boolean multishot = hasEnchantment(stack, Enchantments.MULTISHOT);
 
             if (isFirework) {
@@ -76,12 +75,12 @@ public final class TrajectorySimulator {
         }
 
         // ── Ender Pearl ───────────────────────────────────────────────────────
-        if (item instanceof EnderPearlItem) {
+        if (stack.is(Items.ENDER_PEARL)) {
             return buildResult(player, level, stack, ProjectileType.ENDER_PEARL, 1.0f, false);
         }
 
         // ── Snowball / Egg ────────────────────────────────────────────────────
-        if (item instanceof SnowballItem || item instanceof EggItem) {
+        if (stack.is(Items.SNOWBALL) || stack.is(Items.EGG)) {
             return buildResult(player, level, stack, ProjectileType.SNOWBALL, 1.0f, false);
         }
 
@@ -213,7 +212,7 @@ public final class TrajectorySimulator {
 
     private static int computeFireworkLifetime(ChargedProjectiles charged) {
         // Find the first firework rocket and read its flight_duration
-        for (ItemStack proj : charged.getItems()) {
+        for (ItemStack proj : charged.getProjectiles()) {
             Fireworks fw = proj.get(DataComponents.FIREWORKS);
             if (fw != null) {
                 int gunpowder = fw.flightDuration() & 0xFF; // byte → unsigned int
