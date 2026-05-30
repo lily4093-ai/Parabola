@@ -189,7 +189,9 @@ public final class TrajectorySimulator {
 
         for (int tick = 0; tick < lifetime && tick < MAX_TICKS; tick++) {
             points.add(pos);
-            vel = new Vec3(vel.x * 1.15, vel.y + 0.04, vel.z * 1.15);
+            // Firework accelerates uniformly in aimed direction (stays straight)
+            // y scaling preserves direction; +0.04 upward bias is negligible vs horizontal
+            vel = vel.scale(1.15);
             Vec3 next = pos.add(vel);
 
             BlockHitResult hit = level.clip(new ClipContext(

@@ -53,7 +53,7 @@ public final class TrajectoryRenderer {
 
     private record RenderState(
             List<List<Vec3>> arcs,
-            BlockPos impactPos,
+            List<BlockPos> impactPositions, // one per arc (null-safe entries omitted)
             float r, float g, float b,
             boolean multishot,
             int dotSpacing,
@@ -85,8 +85,14 @@ public final class TrajectoryRenderer {
 
         int rgb = cfg.rgbFor(result.type());
         ProjectileType type = result.type();
+
+        // Compute impact BlockPos for every arc (center + side arcs)
+        List<BlockPos> impacts = arcsCopy.stream()
+                .map(arc -> arc.isEmpty() ? null : BlockPos.containing(arc.get(arc.size() - 1)))
+                .collect(Collectors.toList());
+
         renderState = new RenderState(
-                arcsCopy, result.impactPos(),
+                arcsCopy, impacts,
                 type.r(rgb), type.g(rgb), type.b(rgb),
                 result.isMultishot(),
                 cfg.arcStyle.dotEveryNTicks,
@@ -121,17 +127,26 @@ public final class TrajectoryRenderer {
             addArcDots(buf, mat, arcs.get(0), r, g, b, 1.0f, state.dotSpacing(), state.dotRadius());
         }
 
-        if (state.impactPos() != null) {
-            BlockPos imp = state.impactPos();
-            // Entity hit: bright pulsing color; block hit: configured alpha
-            float hitAlpha = state.entityHit() ? 0.75f : state.impactAlpha();
-            float hr = state.entityHit() ? 1.0f : r;
-            float hg = state.entityHit() ? 0.2f : g;
-            float hb = state.entityHit() ? 0.2f : b;
+        // Impact block highlights for all arcs
+        List<BlockPos> impacts = state.impactPositions();
+        for (int i = 0; i < impacts.size(); i++) {
+            BlockPos imp = impacts.get(i);
+            if (imp == null) continue;
+
+            boolean isCenter = (i == 0);
+            boolean hit = state.entityHit() && isCenter;
+
+            // Side arcs (multishot) render at 60% of center opacity
+            float arcFactor = (!isCenter) ? 0.6f : 1.0f;
+            float impAlpha  = hit ? 0.75f : state.impactAlpha() * arcFactor;
+            float hr = hit ? 1.0f : r;
+            float hg = hit ? 0.2f : g;
+            float hb = hit ? 0.2f : b;
+
             addFilledBox(buf, mat,
                     imp.getX(), imp.getY(), imp.getZ(),
                     imp.getX() + 1f, imp.getY() + 1f, imp.getZ() + 1f,
-                    hr, hg, hb, hitAlpha);
+                    hr, hg, hb, impAlpha);
         }
 
         poseStack.popPose();
