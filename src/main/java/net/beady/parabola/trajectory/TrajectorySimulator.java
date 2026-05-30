@@ -16,6 +16,7 @@ import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -155,10 +156,17 @@ public final class TrajectorySimulator {
 
         for (int tick = 0; tick < MAX_TICKS; tick++) {
             points.add(pos);
-            vel = new Vec3(vel.x, vel.y - type.gravity, vel.z).scale(type.drag);
+
+            // Physics: water slows projectiles (no gravity, higher drag)
+            boolean wet = type.isAffectedByWater() && inWater(level, pos);
+            if (wet) {
+                vel = vel.scale(type.waterDrag); // no gravity in water
+            } else {
+                vel = new Vec3(vel.x, vel.y - type.gravity, vel.z).scale(type.drag);
+            }
             Vec3 next = pos.add(vel);
 
-            // Block collision
+            // Block collision (fluid not treated as solid)
             BlockHitResult hit = level.clip(new ClipContext(
                     pos, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
             if (hit.getType() != HitResult.Type.MISS) {
@@ -189,9 +197,12 @@ public final class TrajectorySimulator {
 
         for (int tick = 0; tick < lifetime && tick < MAX_TICKS; tick++) {
             points.add(pos);
-            // Firework accelerates uniformly in aimed direction (stays straight)
-            // y scaling preserves direction; +0.04 upward bias is negligible vs horizontal
-            vel = vel.scale(1.15);
+            // In water: slow down; in air: accelerate
+            if (inWater(level, pos)) {
+                vel = vel.scale(0.6);
+            } else {
+                vel = vel.scale(1.15);
+            }
             Vec3 next = pos.add(vel);
 
             BlockHitResult hit = level.clip(new ClipContext(
@@ -214,6 +225,10 @@ public final class TrajectorySimulator {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static boolean inWater(ClientLevel level, Vec3 pos) {
+        return level.getFluidState(BlockPos.containing(pos)).is(FluidTags.WATER);
+    }
 
     private static String checkEntityHit(ClientLevel level, LocalPlayer player, Vec3 pos) {
         AABB searchBox = AABB.ofSize(pos, 0.8, 1.8, 0.8);

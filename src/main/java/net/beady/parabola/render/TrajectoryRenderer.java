@@ -201,7 +201,9 @@ public final class TrajectoryRenderer {
     }
 
     private static void submitDraw(Minecraft mc, BufferBuilder builder) {
-        MeshData mesh = builder.buildOrThrow();
+        // build() returns null if no vertices were added (empty trajectory)
+        MeshData mesh = builder.build();
+        if (mesh == null) return;
         MeshData.DrawState drawState = mesh.drawState();
         VertexFormat format = drawState.format();
 
