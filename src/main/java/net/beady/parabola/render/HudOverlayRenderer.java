@@ -90,7 +90,16 @@ public final class HudOverlayRenderer {
         // ── Scope view ────────────────────────────────────────────────────────
         int gridX = px + (PANEL_W - GRID_PX_W) / 2;
         int gridY = py + 19;
-        drawScopeView(g, mc, result, gridX, gridY);
+
+        // Try real framebuffer zoom first; fall back to MapColor grid.
+        boolean usedScope = ScopeCapture.capture(mc, GRID_PX_W, GRID_PX_H);
+        if (usedScope) {
+            // Draw the captured zoom texture into the panel area.
+            g.blit(ScopeCapture.ID, gridX, gridY, 0, 0, GRID_PX_W, GRID_PX_H, GRID_PX_W, GRID_PX_H);
+            drawScopeCrosshair(g, gridX, gridY, result.hitEntity());
+        } else {
+            drawScopeView(g, mc, result, gridX, gridY);
+        }
 
         // ── Bottom label ─────────────────────────────────────────────────────
         int labelY = gridY + GRID_PX_H + 3;
