@@ -1,7 +1,6 @@
 package net.beady.parabola.render;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -59,27 +58,37 @@ public final class TrajectoryRenderer {
             renderArcLine(pose, mat, lineVc, arcs.get(i), r, g, b, a, style);
         }
 
-        // ── Impact block highlights ───────────────────────────────────────────
+        // ── Impact highlights ─────────────────────────────────────────────────
         float impAlpha = cfg.arcStyle.impactBoxAlpha / 100.0f;
         if (impAlpha > 0.0f) {
-            List<BlockPos> impacts = arcs.stream()
-                    .map(arc -> arc.isEmpty() ? null : BlockPos.containing(arc.get(arc.size() - 1)))
-                    .collect(Collectors.toList());
-
             VertexConsumer fillVc = context.bufferSource().getBuffer(RenderTypes.debugFilledBox());
-            for (int i = 0; i < impacts.size(); i++) {
-                BlockPos imp = impacts.get(i);
-                if (imp == null) continue;
-                boolean isCenter = (i == 0);
-                boolean entityHit = result.hitEntity() && isCenter;
-                float fa = entityHit ? 0.75f : impAlpha * (isCenter ? 1.0f : 0.6f);
-                float fr = entityHit ? 1.0f : r;
-                float fg = entityHit ? 0.2f : g;
-                float fb = entityHit ? 0.2f : b;
+
+            // Center arc: entity-sized box if entity hit, else block box
+            if (!arcs.isEmpty() && !arcs.get(0).isEmpty()) {
+                Vec3 last0 = arcs.get(0).get(arcs.get(0).size() - 1);
+                if (result.hitEntity()) {
+                    float hw = 0.4f;
+                    addFilledBox(mat, fillVc,
+                            (float)last0.x - hw, (float)last0.y - 0.9f, (float)last0.z - hw,
+                            (float)last0.x + hw, (float)last0.y + 0.9f, (float)last0.z + hw,
+                            1.0f, 0.2f, 0.2f, 0.8f);
+                } else {
+                    BlockPos imp = BlockPos.containing(last0);
+                    addFilledBox(mat, fillVc,
+                            imp.getX(), imp.getY(), imp.getZ(),
+                            imp.getX() + 1f, imp.getY() + 1f, imp.getZ() + 1f,
+                            r, g, b, impAlpha);
+                }
+            }
+
+            // Side arcs (multishot): always block boxes at 60% alpha
+            for (int i = 1; i < arcs.size(); i++) {
+                if (arcs.get(i).isEmpty()) continue;
+                BlockPos imp = BlockPos.containing(arcs.get(i).get(arcs.get(i).size() - 1));
                 addFilledBox(mat, fillVc,
                         imp.getX(), imp.getY(), imp.getZ(),
                         imp.getX() + 1f, imp.getY() + 1f, imp.getZ() + 1f,
-                        fr, fg, fb, fa);
+                        r, g, b, impAlpha * 0.6f);
             }
         }
 

@@ -25,6 +25,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class TrajectorySimulator {
 
@@ -215,12 +216,10 @@ public final class TrajectorySimulator {
                 break;
             }
 
-            if (tick % 5 == 0) {
-                String entityHit = checkEntityHit(level, player, pos.lerp(next, 0.5));
-                if (entityHit != null) {
-                    points.add(pos.lerp(next, 0.5));
-                    return new ArcResult(points, entityHit);
-                }
+            EntityHit eh = checkSegmentEntityHit(level, player, pos, next);
+            if (eh != null) {
+                points.add(eh.hitPos());
+                return new ArcResult(points, eh.name());
             }
 
             pos = next;
@@ -246,10 +245,10 @@ public final class TrajectorySimulator {
                 break;
             }
 
-            String entityHit = checkEntityHit(level, player, pos.lerp(next, 0.5));
-            if (entityHit != null) {
-                points.add(pos.lerp(next, 0.5));
-                return new ArcResult(points, entityHit);
+            EntityHit eh = checkSegmentEntityHit(level, player, pos, next);
+            if (eh != null) {
+                points.add(eh.hitPos());
+                return new ArcResult(points, eh.name());
             }
 
             pos = next;
@@ -258,6 +257,25 @@ public final class TrajectorySimulator {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private record EntityHit(String name, Vec3 hitPos) {}
+
+    /** Checks entity collision along the full segment [from→to] using AABB raycast (PTP style). */
+    private static EntityHit checkSegmentEntityHit(ClientLevel level, LocalPlayer player, Vec3 from, Vec3 to) {
+        AABB seg = new AABB(from, to).inflate(0.5);
+        LivingEntity best = null;
+        Vec3 bestHit = null;
+        double bestD = Double.MAX_VALUE;
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, seg,
+                ent -> ent != player && !ent.isSpectator() && ent.isAlive())) {
+            Optional<Vec3> res = e.getBoundingBox().inflate(e.getPickRadius()).clip(from, to);
+            if (res.isPresent()) {
+                double d = from.distanceToSqr(res.get());
+                if (d < bestD) { bestD = d; best = e; bestHit = res.get(); }
+            }
+        }
+        return best != null ? new EntityHit(best.getDisplayName().getString(), bestHit) : null;
+    }
 
     /** Returns a throw direction with a pitch offset (negative = more upward). */
     private static Vec3 getPotionThrowDir(LocalPlayer player) {
@@ -271,14 +289,6 @@ public final class TrajectorySimulator {
 
     private static boolean inWater(ClientLevel level, Vec3 pos) {
         return level.getFluidState(BlockPos.containing(pos)).is(FluidTags.WATER);
-    }
-
-    private static String checkEntityHit(ClientLevel level, LocalPlayer player, Vec3 pos) {
-        AABB box = AABB.ofSize(pos, 0.8, 1.8, 0.8);
-        List<LivingEntity> entities = level.getEntitiesOfClass(
-                LivingEntity.class, box,
-                e -> e != player && !e.isSpectator() && e.isAlive());
-        return entities.isEmpty() ? null : entities.get(0).getDisplayName().getString();
     }
 
     private static float computeBowPull(LocalPlayer player) {

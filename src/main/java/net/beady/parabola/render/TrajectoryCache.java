@@ -9,9 +9,10 @@ import net.minecraft.world.item.Item;
 
 public final class TrajectoryCache {
 
-    private static float lastPitch = Float.NaN;
-    private static float lastYaw   = Float.NaN;
-    private static Item  lastItem  = null;
+    private static float lastPitch    = Float.NaN;
+    private static float lastYaw     = Float.NaN;
+    private static Item  lastItem    = null;
+    private static int   lastUseTicks = -1;
     private static double lastVx, lastVy, lastVz;
     private static TrajectoryResult cached = null;
 
@@ -29,19 +30,22 @@ public final class TrajectoryCache {
             return null;
         }
 
-        float pitch   = player.getXRot();
-        float yaw     = player.getYRot();
-        Item  curItem = player.getMainHandItem().getItem();
-        var   v       = player.getDeltaMovement();
+        float pitch    = player.getXRot();
+        float yaw      = player.getYRot();
+        Item  curItem  = player.getMainHandItem().getItem();
+        int   useTicks = player.isUsingItem() ? player.getUseItemRemainingTicks() : -1;
+        var   v        = player.getDeltaMovement();
 
         boolean velChanged = Math.abs(v.x - lastVx) > VEL_THRESHOLD
                           || Math.abs(v.y - lastVy) > VEL_THRESHOLD
                           || Math.abs(v.z - lastVz) > VEL_THRESHOLD;
 
-        if (pitch != lastPitch || yaw != lastYaw || curItem != lastItem || velChanged) {
-            lastPitch = pitch;
-            lastYaw   = yaw;
-            lastItem  = curItem;
+        if (pitch != lastPitch || yaw != lastYaw || curItem != lastItem
+                || useTicks != lastUseTicks || velChanged) {
+            lastPitch    = pitch;
+            lastYaw      = yaw;
+            lastItem     = curItem;
+            lastUseTicks = useTicks;
             lastVx = v.x; lastVy = v.y; lastVz = v.z;
             cached = TrajectorySimulator.simulate(player, level);
         }
