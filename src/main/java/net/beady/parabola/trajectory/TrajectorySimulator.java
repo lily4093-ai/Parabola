@@ -116,11 +116,12 @@ public final class TrajectorySimulator {
                                                  float speedScale, boolean multishot) {
         Vec3 origin = player.getEyePosition(1.0f);
         float speed = type.baseSpeed * speedScale;
+        Vec3 playerVel = player.getDeltaMovement();
 
         if (multishot) {
-            var center = simulateArc(origin, lookDir.scale(speed),           type, level, player);
-            var left   = simulateArc(origin, rotateY(lookDir, -10f).scale(speed), type, level, player);
-            var right  = simulateArc(origin, rotateY(lookDir,  10f).scale(speed), type, level, player);
+            var center = simulateArc(origin, lookDir.scale(speed).add(playerVel),                type, level, player);
+            var left   = simulateArc(origin, rotateY(lookDir, -10f).scale(speed).add(playerVel), type, level, player);
+            var right  = simulateArc(origin, rotateY(lookDir,  10f).scale(speed).add(playerVel), type, level, player);
 
             BlockPos impact = impactBlock(center.points());
             double dist = impact != null ? origin.distanceTo(Vec3.atCenterOf(impact)) : 0;
@@ -128,7 +129,7 @@ public final class TrajectorySimulator {
                     List.of(center.points(), left.points(), right.points()),
                     impact, dist, type, true, false, center.entityName());
         } else {
-            var result = simulateArc(origin, lookDir.scale(speed), type, level, player);
+            var result = simulateArc(origin, lookDir.scale(speed).add(playerVel), type, level, player);
             BlockPos impact = impactBlock(result.points());
             double dist = impact != null ? origin.distanceTo(Vec3.atCenterOf(impact)) : 0;
             return new TrajectoryResult(
@@ -140,12 +141,14 @@ public final class TrajectorySimulator {
                                                          ChargedProjectiles charged, boolean multishot) {
         Vec3 origin = player.getEyePosition(1.0f);
         Vec3 look   = player.getLookAngle();
+        Vec3 pv     = player.getDeltaMovement();
         int lifetime = computeFireworkLifetime(charged);
+        float fw = ProjectileType.CROSSBOW_FIREWORK.baseSpeed;
 
         if (multishot) {
-            var center = simulateFirework(origin, look.scale(ProjectileType.CROSSBOW_FIREWORK.baseSpeed), lifetime, level, player);
-            var left   = simulateFirework(origin, rotateY(look, -10f).scale(ProjectileType.CROSSBOW_FIREWORK.baseSpeed), lifetime, level, player);
-            var right  = simulateFirework(origin, rotateY(look,  10f).scale(ProjectileType.CROSSBOW_FIREWORK.baseSpeed), lifetime, level, player);
+            var center = simulateFirework(origin, look.scale(fw).add(pv),                lifetime, level, player);
+            var left   = simulateFirework(origin, rotateY(look, -10f).scale(fw).add(pv), lifetime, level, player);
+            var right  = simulateFirework(origin, rotateY(look,  10f).scale(fw).add(pv), lifetime, level, player);
 
             BlockPos impact = impactBlock(center.points());
             double dist = impact != null ? origin.distanceTo(Vec3.atCenterOf(impact)) : 0;
@@ -153,7 +156,7 @@ public final class TrajectorySimulator {
                     List.of(center.points(), left.points(), right.points()),
                     impact, dist, ProjectileType.CROSSBOW_FIREWORK, true, false, center.entityName());
         } else {
-            var result = simulateFirework(origin, look.scale(ProjectileType.CROSSBOW_FIREWORK.baseSpeed), lifetime, level, player);
+            var result = simulateFirework(origin, look.scale(fw).add(pv), lifetime, level, player);
             BlockPos impact = impactBlock(result.points());
             double dist = impact != null ? origin.distanceTo(Vec3.atCenterOf(impact)) : 0;
             return new TrajectoryResult(
@@ -172,9 +175,10 @@ public final class TrajectorySimulator {
         Vec3 eyePos = player.getEyePosition(1.0f);
         Vec3 origin = new Vec3(eyePos.x - i * 0.3, eyePos.y, eyePos.z - h * 0.3);
 
-        Vec3 rawVel = new Vec3(-i, Mth.clamp(-(double)(k / j), -5.0, 5.0), -h);
+        double velY = (j != 0) ? Mth.clamp(-(double)(k / j), -5.0, 5.0) : (k > 0 ? -5.0 : 5.0);
+        Vec3 rawVel = new Vec3(-i, velY, -h);
         double len = rawVel.length();
-        Vec3 vel = len > 0 ? rawVel.scale(0.6 / len + 0.5) : rawVel;
+        Vec3 vel = (len > 0 ? rawVel.scale(0.6 / len + 0.5) : rawVel).add(player.getDeltaMovement());
 
         var result = simulateArc(origin, vel, ProjectileType.FISHING_ROD, level, player);
         BlockPos impact = impactBlock(result.points());

@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 
@@ -121,7 +122,7 @@ public final class HudOverlayRenderer {
                     int cx = gridX + (dx + 2) * CELL;
                     int cz = gridY + (dz + 2) * CELL;
 
-                    if (!bs.isAir()) {
+                    if (!bs.isAir() && !bs.is(Blocks.WATER) && !bs.is(Blocks.LAVA) && !bs.is(Blocks.BUBBLE_COLUMN)) {
                         MapColor mc2 = bs.getMapColor(level, bp);
                         g.fill(cx, cz, cx + CELL - 1, cz + CELL - 1, 0xFF000000 | mc2.col);
                         // Cell border
