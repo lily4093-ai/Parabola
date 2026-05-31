@@ -15,28 +15,31 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.List;
 
 public final class HudOverlayRenderer {
 
     private static final Identifier ID =
             Identifier.fromNamespaceAndPath("parabola", "impact_scope");
 
-    // Panel dimensions
     private static final int PANEL_W = 120;
-    private static final int PANEL_H = 120;
+    private static final int PANEL_H = 122;
     private static final int MARGIN  = 8;
 
-    // Scope grid: 5×5 blocks at 18px each
+    // Scope grid: 5 cols × 5 rows
     private static final int CELL    = 18;
-    private static final int GRID    = 5;
-    private static final int GRID_PX = CELL * GRID; // 90
+    private static final int GRID_W  = 5;
+    private static final int GRID_H  = 5;
+    private static final int GRID_PX_W = CELL * GRID_W; // 90
+    private static final int GRID_PX_H = CELL * GRID_H; // 90
 
-    // Colors
-    private static final int TEXT_W   = 0xFFFFFFFF;
-    private static final int TEXT_DIM = 0xFFAAAAAA;
-    private static final int TEXT_HIT = 0xFFFF5555;
-    private static final int COL_BORDER_OUTER = 0xFF1A1A1A;
-    private static final int COL_BORDER_INNER = 0xFF4B0082;
+    private static final int TEXT_W       = 0xFFFFFFFF;
+    private static final int TEXT_DIM     = 0xFFAAAAAA;
+    private static final int TEXT_HIT     = 0xFFFF5555;
+    private static final int BORDER_OUTER = 0xFF1A1A1A;
+    private static final int BORDER_INNER = 0xFF4B0082;
 
     private HudOverlayRenderer() {}
 
@@ -57,7 +60,7 @@ public final class HudOverlayRenderer {
         int sw = mc.getWindow().getGuiScaledWidth();
         int sh = mc.getWindow().getGuiScaledHeight();
 
-        // ── Riptide special label ─────────────────────────────────────────────
+        // ── Riptide ──────────────────────────────────────────────────────────
         if (result.isRiptide()) {
             String txt = "⚡ Riptide";
             int tw = mc.font.width(txt);
@@ -72,125 +75,205 @@ public final class HudOverlayRenderer {
         int px = sw - PANEL_W - MARGIN;
         int py = sh - PANEL_H - MARGIN;
 
-        // ── Panel background (tooltip-style) ─────────────────────────────────
         drawPanelBackground(g, px, py, PANEL_W, PANEL_H, panelAlpha);
 
-        int contentX = px + 5;
         int rgb = cfg.rgbFor(result.type());
         int typeColor = 0xFF000000 | rgb;
 
-        // ── Header: type label ────────────────────────────────────────────────
-        String typeLabel = typeName(result.type(), result.isMultishot());
-        g.text(mc.font, typeLabel, contentX, py + 5, typeColor, false);
-
-        // ── Distance ─────────────────────────────────────────────────────────
+        // ── Header ───────────────────────────────────────────────────────────
+        g.text(mc.font, typeName(result.type(), result.isMultishot()), px + 5, py + 5, typeColor, false);
         String distStr = String.format("%.1fm", result.impactDistance());
-        int distW = mc.font.width(distStr);
-        g.text(mc.font, distStr, px + PANEL_W - distW - 5, py + 5, TEXT_DIM, false);
+        g.text(mc.font, distStr, px + PANEL_W - mc.font.width(distStr) - 5, py + 5, TEXT_DIM, false);
 
-        // ── Separator ─────────────────────────────────────────────────────────
-        g.fill(contentX, py + 15, px + PANEL_W - 5, py + 16, 0x55FFFFFF);
+        g.fill(px + 5, py + 15, px + PANEL_W - 5, py + 16, 0x55FFFFFF);
 
-        // ── Scope grid (top-down zoomed view) ────────────────────────────────
-        int gridX = px + (PANEL_W - GRID_PX) / 2;
+        // ── Scope view ────────────────────────────────────────────────────────
+        int gridX = px + (PANEL_W - GRID_PX_W) / 2;
         int gridY = py + 19;
+        drawScopeView(g, mc, result, gridX, gridY);
 
-        drawScopeGrid(g, mc, result, gridX, gridY);
-
-        // ── Entity / block label at bottom ────────────────────────────────────
-        int labelY = gridY + GRID_PX + 3;
+        // ── Bottom label ─────────────────────────────────────────────────────
+        int labelY = gridY + GRID_PX_H + 3;
         if (result.hitEntity() && cfg.showEntityHit) {
-            // Red background flash for entity hit
             g.fill(px + 3, labelY - 1, px + PANEL_W - 3, labelY + 10, 0xBB660000);
-            String hitLabel = "⚔ " + result.hitEntityName();
-            g.text(mc.font, hitLabel, contentX, labelY, TEXT_HIT, false);
+            g.text(mc.font, "⚔ " + result.hitEntityName(), px + 5, labelY, TEXT_HIT, false);
         } else {
             ClientLevel level = mc.level;
             BlockPos impact = result.impactPos();
             if (level != null && impact != null) {
-                BlockState state = level.getBlockState(impact);
-                String blockName = state.getBlock().getName().getString();
-                g.text(mc.font, blockName, contentX, labelY, TEXT_DIM, false);
+                g.text(mc.font, level.getBlockState(impactAdjusted(level, impact))
+                        .getBlock().getName().getString(), px + 5, labelY, TEXT_DIM, false);
             }
         }
 
-        // ── Color accent strip ────────────────────────────────────────────────
-        int stripY = py + PANEL_H - 4;
-        g.fill(px + 3, stripY, px + PANEL_W - 3, py + PANEL_H - 1, 0xFF000000 | rgb);
+        // ── Color strip ───────────────────────────────────────────────────────
+        g.fill(px + 3, py + PANEL_H - 4, px + PANEL_W - 3, py + PANEL_H - 1, 0xFF000000 | rgb);
     }
 
-    private static void drawScopeGrid(GuiGraphicsExtractor g, Minecraft mc,
+    // ────────────────────────────────────────────────────────────────────────
+    // Scope view: front-facing cross-section perpendicular to shot direction
+    // ────────────────────────────────────────────────────────────────────────
+
+    private static void drawScopeView(GuiGraphicsExtractor g, Minecraft mc,
                                        TrajectoryResult result, int gx, int gy) {
         ClientLevel level = mc.level;
-        BlockPos impact = result.impactPos();
+        if (level == null) return;
+        BlockPos center = impactAdjusted(level, result.impactPos());
+        if (center == null) return;
+
+        // Shot direction from last arc segment
+        List<Vec3> arc = result.centerArc();
+        Vec3 shotDir = getShotDir(arc);
+
+        // Choose cross-section axis based on dominant shot direction
+        double absX = Math.abs(shotDir.x);
+        double absY = Math.abs(shotDir.y);
+        double absZ = Math.abs(shotDir.z);
 
         // Dark background
-        g.fill(gx - 1, gy - 1, gx + GRID_PX + 1, gy + GRID_PX + 1, 0xCC000000);
+        g.fill(gx - 1, gy - 1, gx + GRID_PX_W + 1, gy + GRID_PX_H + 1, 0xCC000000);
 
-        // Block cells
-        if (level != null && impact != null) {
-            for (int dx = -2; dx <= 2; dx++) {
-                for (int dz = -2; dz <= 2; dz++) {
-                    BlockPos bp = impact.offset(dx, 0, dz);
-                    BlockState bs = level.getBlockState(bp);
-                    int cx = gx + (dx + 2) * CELL;
-                    int cz = gy + (dz + 2) * CELL;
-                    if (!bs.isAir() && !bs.is(Blocks.WATER) && !bs.is(Blocks.LAVA) && !bs.is(Blocks.BUBBLE_COLUMN)) {
-                        MapColor mc2 = bs.getMapColor(level, bp);
-                        g.fill(cx, cz, cx + CELL - 1, cz + CELL - 1, 0xFF000000 | mc2.col);
-                        // Subtle cell highlight top+left
-                        g.fill(cx, cz, cx + CELL - 1, cz + 1, 0x30FFFFFF);
-                        g.fill(cx, cz, cx + 1, cz + CELL - 1, 0x30FFFFFF);
-                    }
+        for (int col = -2; col <= 2; col++) {       // horizontal in cross-section
+            for (int row = -2; row <= 2; row++) {   // vertical
+                BlockPos bp = crossSectionBlock(center, col, row, absX, absY, absZ, shotDir);
+                BlockState bs = getVisibleBlock(level, bp, shotDir);
+
+                int cx = gx + (col + 2) * CELL;
+                int cy = gy + (2 - row) * CELL; // row +2 = top of grid
+
+                if (bs != null) {
+                    MapColor mc2 = bs.getMapColor(level, bp);
+                    int base = 0xFF000000 | mc2.col;
+                    // Apply subtle height tinting (darker = lower)
+                    float heightFade = (row + 2) / 4.0f; // 0.0 at bottom, 1.0 at top
+                    int dimming = (int)(40 * (1.0f - heightFade));
+                    int shaded = darken(base, dimming);
+
+                    g.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, shaded);
+                    // Light edge (top-left)
+                    g.fill(cx, cy, cx + CELL - 1, cy + 1, 0x35FFFFFF);
+                    g.fill(cx, cy, cx + 1, cy + CELL - 1, 0x35FFFFFF);
+                    // Dark edge (bottom-right)
+                    g.fill(cx, cy + CELL - 2, cx + CELL - 1, cy + CELL - 1, 0x35000000);
+                    g.fill(cx + CELL - 2, cy, cx + CELL - 1, cy + CELL - 1, 0x35000000);
                 }
             }
         }
 
-        // ── Scope crosshair ───────────────────────────────────────────────────
-        int cx = gx + GRID_PX / 2;
-        int cy = gy + GRID_PX / 2;
+        drawScopeCrosshair(g, gx, gy, result.hitEntity());
+    }
 
-        // Long crosshair lines (scope-style)
-        int lineAlpha = result.hitEntity() ? 0xCCFF3333 : 0xCCFFFFFF;
-        // Horizontal
-        g.fill(gx,      cy,     cx - 4, cy + 1, lineAlpha);
-        g.fill(cx + 5,  cy,     gx + GRID_PX, cy + 1, lineAlpha);
-        // Vertical
-        g.fill(cx,      gy,     cx + 1, cy - 4, lineAlpha);
-        g.fill(cx,      cy + 5, cx + 1, gy + GRID_PX, lineAlpha);
+    /** Returns the dominant-axis cross-section block for a given grid cell. */
+    private static BlockPos crossSectionBlock(BlockPos center, int col, int row,
+                                               double absX, double absY, double absZ, Vec3 shot) {
+        if (absY > 0.65) {
+            // Shot mostly vertical → top-down (X-Z plane)
+            return center.offset(col, 0, row);
+        } else if (absX >= absZ) {
+            // Shot mostly along X → show Z-Y cross-section
+            return center.offset(0, row, col);
+        } else {
+            // Shot mostly along Z → show X-Y cross-section
+            return center.offset(col, row, 0);
+        }
+    }
 
-        // Center dot / hit indicator
-        int dotColor = result.hitEntity() ? 0xFFFF3333 : 0xFFFF0000;
-        g.fill(cx - 2, cy - 2, cx + 3, cy + 3, dotColor);
-        g.fill(cx - 1, cy - 1, cx + 2, cy + 2, result.hitEntity() ? 0xFFFFAAAA : 0xFFFFFFFF);
+    /** Gets the first non-air/non-fluid block at bp or one step further along shot direction. */
+    private static BlockState getVisibleBlock(ClientLevel level, BlockPos bp, Vec3 shot) {
+        BlockState bs = level.getBlockState(bp);
+        if (isRenderable(bs)) return bs;
 
-        // Corner tick marks (scope aesthetic)
-        int tl = 5;
-        g.fill(gx + 1,          gy + 1,          gx + 1 + tl, gy + 2,          0x88FFFFFF);
-        g.fill(gx + 1,          gy + 1,          gx + 2,      gy + 1 + tl,     0x88FFFFFF);
-        g.fill(gx + GRID_PX - tl - 1, gy + 1,   gx + GRID_PX - 1, gy + 2,     0x88FFFFFF);
-        g.fill(gx + GRID_PX - 2, gy + 1,         gx + GRID_PX - 1, gy + 1 + tl, 0x88FFFFFF);
-        g.fill(gx + 1,          gy + GRID_PX - 2, gx + 1 + tl, gy + GRID_PX - 1, 0x88FFFFFF);
-        g.fill(gx + 1,          gy + GRID_PX - tl - 1, gx + 2, gy + GRID_PX - 1, 0x88FFFFFF);
-        g.fill(gx + GRID_PX - tl - 1, gy + GRID_PX - 2, gx + GRID_PX - 1, gy + GRID_PX - 1, 0x88FFFFFF);
-        g.fill(gx + GRID_PX - 2, gy + GRID_PX - tl - 1, gx + GRID_PX - 1, gy + GRID_PX - 1, 0x88FFFFFF);
+        // Try one step further into the surface (behind the face)
+        int dx = (int) Math.round(shot.x);
+        int dy = (int) Math.round(shot.y);
+        int dz = (int) Math.round(shot.z);
+        if (dx != 0 || dy != 0 || dz != 0) {
+            BlockPos bp2 = bp.offset(dx, dy, dz);
+            BlockState bs2 = level.getBlockState(bp2);
+            if (isRenderable(bs2)) return bs2;
+        }
+        return null;
+    }
+
+    private static boolean isRenderable(BlockState bs) {
+        return !bs.isAir() && !bs.is(Blocks.WATER) && !bs.is(Blocks.LAVA) && !bs.is(Blocks.BUBBLE_COLUMN);
+    }
+
+    private static void drawScopeCrosshair(GuiGraphicsExtractor g, int gx, int gy, boolean hit) {
+        int cx = gx + GRID_PX_W / 2;
+        int cy = gy + GRID_PX_H / 2;
+        int lineColor = hit ? 0xCCFF3333 : 0xCCFFFFFF;
+
+        // Horizontal crosshair lines (gap in center)
+        g.fill(gx + 2,    cy,     cx - 5,       cy + 1, lineColor);
+        g.fill(cx + 6,    cy,     gx + GRID_PX_W - 2, cy + 1, lineColor);
+        // Vertical crosshair lines
+        g.fill(cx,        gy + 2, cx + 1, cy - 5,       lineColor);
+        g.fill(cx,        cy + 6, cx + 1, gy + GRID_PX_H - 2, lineColor);
+
+        // Center diamond
+        int dotCol = hit ? 0xFFFF3333 : 0xFFFF0000;
+        g.fill(cx - 1, cy,     cx + 2, cy + 1, dotCol);
+        g.fill(cx,     cy - 1, cx + 1, cy + 2, dotCol);
+
+        // Corner tick marks
+        int t = 5;
+        drawTick(g, gx + 1,             gy + 1,              t, true,  true);
+        drawTick(g, gx + GRID_PX_W - 2, gy + 1,              t, false, true);
+        drawTick(g, gx + 1,             gy + GRID_PX_H - 2,  t, true,  false);
+        drawTick(g, gx + GRID_PX_W - 2, gy + GRID_PX_H - 2,  t, false, false);
+    }
+
+    private static void drawTick(GuiGraphicsExtractor g, int x, int y, int len,
+                                  boolean rightward, boolean downward) {
+        int col = 0x88FFFFFF;
+        int dx = rightward ? 1 : -1;
+        int dy = downward  ? 1 : -1;
+        g.fill(x,          y,          x + dx * len, y + dy,          col);
+        g.fill(x,          y,          x + dx,        y + dy * len,   col);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static Vec3 getShotDir(List<Vec3> arc) {
+        if (arc.size() >= 2) {
+            Vec3 a = arc.get(arc.size() - 1);
+            Vec3 b = arc.get(arc.size() - 2);
+            Vec3 d = a.subtract(b);
+            if (d.length() > 0) return d.normalize();
+        }
+        return new Vec3(0, -1, 0);
+    }
+
+    /** When a block face top is hit, BlockPos.containing lands in the air above. Walk down. */
+    private static BlockPos impactAdjusted(ClientLevel level, BlockPos pos) {
+        if (pos == null || level == null) return pos;
+        int attempts = 0;
+        while (attempts++ < 3 && level.getBlockState(pos).isAir()) {
+            pos = pos.below();
+        }
+        return pos;
+    }
+
+    private static int darken(int argb, int amount) {
+        int r = Math.max(0, ((argb >> 16) & 0xFF) - amount);
+        int gr = Math.max(0, ((argb >>  8) & 0xFF) - amount);
+        int b  = Math.max(0,  (argb        & 0xFF) - amount);
+        return (argb & 0xFF000000) | (r << 16) | (gr << 8) | b;
     }
 
     private static void drawPanelBackground(GuiGraphicsExtractor g,
                                              int x, int y, int w, int h, int alpha) {
         int bg = (alpha << 24) | 0x100010;
-        // Main body
         g.fill(x + 1, y,     x + w - 1, y + h,     bg);
         g.fill(x,     y + 1, x + 1,     y + h - 1, bg);
         g.fill(x + w - 1, y + 1, x + w, y + h - 1, bg);
-        // Outer border
-        g.fill(x + 1, y,         x + w - 1, y + 1,         COL_BORDER_OUTER);
-        g.fill(x + 1, y + h - 1, x + w - 1, y + h,         COL_BORDER_OUTER);
-        g.fill(x,     y + 1,     x + 1,     y + h - 1,     COL_BORDER_OUTER);
-        g.fill(x + w - 1, y + 1, x + w,     y + h - 1,     COL_BORDER_OUTER);
-        // Inner accent (purple)
-        g.fill(x + 1, y + 1,     x + 2,     y + h - 1, COL_BORDER_INNER);
-        g.fill(x + w - 2, y + 1, x + w - 1, y + h - 1, COL_BORDER_INNER);
+        g.fill(x + 1, y,         x + w - 1, y + 1,         BORDER_OUTER);
+        g.fill(x + 1, y + h - 1, x + w - 1, y + h,         BORDER_OUTER);
+        g.fill(x,     y + 1,     x + 1,     y + h - 1,     BORDER_OUTER);
+        g.fill(x + w - 1, y + 1, x + w,     y + h - 1,     BORDER_OUTER);
+        g.fill(x + 1, y + 1,     x + 2,     y + h - 1, BORDER_INNER);
+        g.fill(x + w - 2, y + 1, x + w - 1, y + h - 1, BORDER_INNER);
     }
 
     private static String typeName(ProjectileType type, boolean multishot) {
