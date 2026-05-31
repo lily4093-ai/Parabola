@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "net.beady.parabola.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [],
+  "client": [
+    "CameraAccessor",
+    "GameRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

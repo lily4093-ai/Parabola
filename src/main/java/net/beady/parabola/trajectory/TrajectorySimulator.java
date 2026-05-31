@@ -33,10 +33,11 @@ public final class TrajectorySimulator {
 
     private TrajectorySimulator() {}
 
-    public static TrajectoryResult simulate(LocalPlayer player, ClientLevel level) {
+    public static TrajectoryResult simulate(LocalPlayer player, ClientLevel level, Vec3 playerVelocity) {
         if (player == null || level == null) return null;
         if (player.isDeadOrDying()) return null;
 
+        _playerVel = playerVelocity;
         ItemStack stack = player.getMainHandItem();
 
         // ── Trident ─────────────────────────────────────────────────────────
@@ -112,12 +113,15 @@ public final class TrajectorySimulator {
 
     // ── Build helpers ─────────────────────────────────────────────────────────
 
+    // Caller supplies the (smoothed) player velocity to avoid per-frame jitter.
+    private static Vec3 _playerVel = Vec3.ZERO;
+
     private static TrajectoryResult buildResult(LocalPlayer player, ClientLevel level,
                                                  ProjectileType type, Vec3 lookDir,
                                                  float speedScale, boolean multishot) {
         Vec3 origin = player.getEyePosition(1.0f);
         float speed = type.baseSpeed * speedScale;
-        Vec3 playerVel = player.getDeltaMovement();
+        Vec3 playerVel = _playerVel;
 
         if (multishot) {
             var center = simulateArc(origin, lookDir.scale(speed).add(playerVel),                type, level, player);
@@ -142,7 +146,7 @@ public final class TrajectorySimulator {
                                                          ChargedProjectiles charged, boolean multishot) {
         Vec3 origin = player.getEyePosition(1.0f);
         Vec3 look   = player.getLookAngle();
-        Vec3 pv     = player.getDeltaMovement();
+        Vec3 pv     = _playerVel;
         int lifetime = computeFireworkLifetime(charged);
         float fw = ProjectileType.CROSSBOW_FIREWORK.baseSpeed;
 
@@ -179,7 +183,7 @@ public final class TrajectorySimulator {
         double velY = (j != 0) ? Mth.clamp(-(double)(k / j), -5.0, 5.0) : (k > 0 ? -5.0 : 5.0);
         Vec3 rawVel = new Vec3(-i, velY, -h);
         double len = rawVel.length();
-        Vec3 vel = (len > 0 ? rawVel.scale(0.6 / len + 0.5) : rawVel).add(player.getDeltaMovement());
+        Vec3 vel = (len > 0 ? rawVel.scale(0.6 / len + 0.5) : rawVel).add(_playerVel);
 
         var result = simulateArc(origin, vel, ProjectileType.FISHING_ROD, level, player);
         BlockPos impact = impactBlock(result.points());
