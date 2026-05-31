@@ -13,13 +13,36 @@
   "text.autoconfig.parabola.option.showEntityHit": "몹 명중 경고 표시",
   "text.autoconfig.parabola.option.showEntityHit.@Tooltip[0]": "궤적이 몹에 닿을 경우 착탄 박스를 빨간색으로 강조하고 몹 이름을 표시합니다.",
 
+  "text.autoconfig.parabola.option.toggles": "투사체별 토글",
+
+  "text.autoconfig.parabola.option.toggles.bow": "활",
+  "text.autoconfig.parabola.option.toggles.bow.@Tooltip[0]": "활 화살의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.crossbow": "석궁",
+  "text.autoconfig.parabola.option.toggles.crossbow.@Tooltip[0]": "석궁(화살, 폭죽)의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.trident": "삼지창",
+  "text.autoconfig.parabola.option.toggles.trident.@Tooltip[0]": "삼지창의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.enderPearl": "엔더 진주",
+  "text.autoconfig.parabola.option.toggles.enderPearl.@Tooltip[0]": "엔더 진주의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.snowball": "눈덩이",
+  "text.autoconfig.parabola.option.toggles.snowball.@Tooltip[0]": "눈덩이의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.egg": "달걀",
+  "text.autoconfig.parabola.option.toggles.egg.@Tooltip[0]": "달걀의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.windCharge": "돌풍구",
+  "text.autoconfig.parabola.option.toggles.windCharge.@Tooltip[0]": "돌풍구의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.fishingRod": "낚싯대",
+  "text.autoconfig.parabola.option.toggles.fishingRod.@Tooltip[0]": "낚싯대 궤적 미리보기 표시 (기본값: 꺼짐).",
+  "text.autoconfig.parabola.option.toggles.splashPotion": "투척용 / 잔류형 물약",
+  "text.autoconfig.parabola.option.toggles.splashPotion.@Tooltip[0]": "투척용 물약과 잔류형 물약의 궤적 미리보기 표시.",
+  "text.autoconfig.parabola.option.toggles.expBottle": "경험치 물약",
+  "text.autoconfig.parabola.option.toggles.expBottle.@Tooltip[0]": "경험치 물약의 궤적 미리보기 표시.",
+
   "text.autoconfig.parabola.option.arcStyle": "궤적 스타일",
 
-  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks": "점 간격 (틱)",
-  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks.@Tooltip[0]": "N 시뮬레이션 틱마다 점 하나를 렌더링합니다. 낮을수록 촘촘하고, 높을수록 듬성합니다.",
+  "text.autoconfig.parabola.option.arcStyle.trajectoryStyle": "선 스타일",
+  "text.autoconfig.parabola.option.arcStyle.trajectoryStyle.@Tooltip[0]": "SOLID = 연속 선, DASHED = 절반 길이 선분, DOTTED = 짧은 점선.",
 
-  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit": "점 크기",
-  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit.@Tooltip[0]": "각 점의 반지름 (단위: 블록의 1/100, 6 = 0.06블록).",
+  "text.autoconfig.parabola.option.arcStyle.opacityMode": "불투명도 모드",
+  "text.autoconfig.parabola.option.arcStyle.opacityMode.@Tooltip[0]": "OPAQUE = 완전 불투명, TRANSPARENT = 반투명, PULSING = 깜빡임 효과.",
 
   "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha": "착탄 박스 불투명도 (%)",
   "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha.@Tooltip[0]": "착탄 블록 강조 박스의 불투명도 (0 = 보이지 않음, 100 = 완전 불투명).",
@@ -31,22 +54,22 @@
 
   "text.autoconfig.parabola.option.colors.bow": "활",
   "text.autoconfig.parabola.option.colors.bow.@Tooltip[0]": "활 화살의 궤적 색상.",
-
   "text.autoconfig.parabola.option.colors.crossbowArrow": "석궁 — 화살",
   "text.autoconfig.parabola.option.colors.crossbowArrow.@Tooltip[0]": "석궁 화살의 궤적 색상.",
-
   "text.autoconfig.parabola.option.colors.crossbowFirework": "석궁 — 폭죽",
   "text.autoconfig.parabola.option.colors.crossbowFirework.@Tooltip[0]": "석궁 폭죽 로켓의 궤적 색상.",
-
   "text.autoconfig.parabola.option.colors.trident": "삼지창",
   "text.autoconfig.parabola.option.colors.trident.@Tooltip[0]": "삼지창의 궤적 색상.",
-
   "text.autoconfig.parabola.option.colors.enderPearl": "엔더 진주",
   "text.autoconfig.parabola.option.colors.enderPearl.@Tooltip[0]": "엔더 진주의 궤적 색상.",
-
   "text.autoconfig.parabola.option.colors.snowballEgg": "눈덩이 / 달걀",
   "text.autoconfig.parabola.option.colors.snowballEgg.@Tooltip[0]": "눈덩이와 달걀의 궤적 색상.",
-
   "text.autoconfig.parabola.option.colors.windCharge": "돌풍구",
-  "text.autoconfig.parabola.option.colors.windCharge.@Tooltip[0]": "돌풍구의 궤적 색상."
+  "text.autoconfig.parabola.option.colors.windCharge.@Tooltip[0]": "돌풍구의 궤적 색상.",
+  "text.autoconfig.parabola.option.colors.fishingRod": "낚싯대",
+  "text.autoconfig.parabola.option.colors.fishingRod.@Tooltip[0]": "낚싯대 찌의 궤적 색상.",
+  "text.autoconfig.parabola.option.colors.splashPotion": "투척용 / 잔류형 물약",
+  "text.autoconfig.parabola.option.colors.splashPotion.@Tooltip[0]": "투척용·잔류형 물약의 궤적 색상.",
+  "text.autoconfig.parabola.option.colors.expBottle": "경험치 물약",
+  "text.autoconfig.parabola.option.colors.expBottle.@Tooltip[0]": "경험치 물약의 궤적 색상."
 }

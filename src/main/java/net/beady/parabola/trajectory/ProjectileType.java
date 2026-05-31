@@ -9,15 +9,14 @@ public enum ProjectileType {
     ENDER_PEARL(      1.5f,  0.03f, 0.99f,  0.8f,  0xAA00FF),
     SNOWBALL(         1.5f,  0.03f, 0.99f,  0.8f,  0xFFFFFF),
     EGG(              1.5f,  0.03f, 0.99f,  0.8f,  0xFFFFFF),
-    WIND_CHARGE(      1.5f,  0.01f, 0.99f,  0.8f,  0x88DDFF);
+    WIND_CHARGE(      1.0f,  0.0f,  0.95f,  0.8f,  0x88DDFF),
+    FISHING_ROD(      1.0f,  0.03f, 0.92f,  -1f,   0x44AAFF),  // velocity computed specially; water-exempt
+    SPLASH_POTION(    0.5f,  0.05f, 0.99f,  0.8f,  0xFF88FF),  // thrown at -20° pitch bias
+    EXP_BOTTLE(       0.7f,  0.07f, 0.99f,  0.8f,  0x00EE88);  // thrown at -20° pitch bias
 
     public final float baseSpeed;
     public final float gravity;
     public final float drag;
-    /**
-     * Drag applied each tick while the projectile is in water (no gravity applied).
-     * -1 means this type is exempt from water slowdown (trident).
-     */
     public final float waterDrag;
     public final int defaultRgb;
 

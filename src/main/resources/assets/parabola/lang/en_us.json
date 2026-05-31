@@ -11,15 +11,38 @@
   "text.autoconfig.parabola.option.showHudPanel.@Tooltip[0]": "Show the mini scope panel in the bottom-right corner.",
 
   "text.autoconfig.parabola.option.showEntityHit": "Show Entity Hit Warning",
-  "text.autoconfig.parabola.option.showEntityHit.@Tooltip[0]": "Highlight the impact box red and label the entity name when the trajectory would hit a mob.",
+  "text.autoconfig.parabola.option.showEntityHit.@Tooltip[0]": "Highlight the impact box red and show the entity name when the trajectory would hit a mob.",
+
+  "text.autoconfig.parabola.option.toggles": "Per-Projectile Toggles",
+
+  "text.autoconfig.parabola.option.toggles.bow": "Bow",
+  "text.autoconfig.parabola.option.toggles.bow.@Tooltip[0]": "Show trajectory preview for bows.",
+  "text.autoconfig.parabola.option.toggles.crossbow": "Crossbow",
+  "text.autoconfig.parabola.option.toggles.crossbow.@Tooltip[0]": "Show trajectory preview for crossbows (arrow and firework).",
+  "text.autoconfig.parabola.option.toggles.trident": "Trident",
+  "text.autoconfig.parabola.option.toggles.trident.@Tooltip[0]": "Show trajectory preview for tridents.",
+  "text.autoconfig.parabola.option.toggles.enderPearl": "Ender Pearl",
+  "text.autoconfig.parabola.option.toggles.enderPearl.@Tooltip[0]": "Show trajectory preview for ender pearls.",
+  "text.autoconfig.parabola.option.toggles.snowball": "Snowball",
+  "text.autoconfig.parabola.option.toggles.snowball.@Tooltip[0]": "Show trajectory preview for snowballs.",
+  "text.autoconfig.parabola.option.toggles.egg": "Egg",
+  "text.autoconfig.parabola.option.toggles.egg.@Tooltip[0]": "Show trajectory preview for eggs.",
+  "text.autoconfig.parabola.option.toggles.windCharge": "Wind Charge",
+  "text.autoconfig.parabola.option.toggles.windCharge.@Tooltip[0]": "Show trajectory preview for wind charges.",
+  "text.autoconfig.parabola.option.toggles.fishingRod": "Fishing Rod",
+  "text.autoconfig.parabola.option.toggles.fishingRod.@Tooltip[0]": "Show trajectory preview for fishing rods (disabled by default).",
+  "text.autoconfig.parabola.option.toggles.splashPotion": "Splash / Lingering Potion",
+  "text.autoconfig.parabola.option.toggles.splashPotion.@Tooltip[0]": "Show trajectory preview for splash and lingering potions.",
+  "text.autoconfig.parabola.option.toggles.expBottle": "XP Bottle",
+  "text.autoconfig.parabola.option.toggles.expBottle.@Tooltip[0]": "Show trajectory preview for experience bottles.",
 
   "text.autoconfig.parabola.option.arcStyle": "Arc Style",
 
-  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks": "Dot Spacing (ticks)",
-  "text.autoconfig.parabola.option.arcStyle.dotEveryNTicks.@Tooltip[0]": "Render one dot every N simulation ticks. Lower = denser arc, higher = sparser.",
+  "text.autoconfig.parabola.option.arcStyle.trajectoryStyle": "Line Style",
+  "text.autoconfig.parabola.option.arcStyle.trajectoryStyle.@Tooltip[0]": "SOLID = continuous line, DASHED = half-length segments, DOTTED = short marks.",
 
-  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit": "Dot Size",
-  "text.autoconfig.parabola.option.arcStyle.dotSizeUnit.@Tooltip[0]": "Radius of each dot in hundredths of a block (6 = 0.06 blocks).",
+  "text.autoconfig.parabola.option.arcStyle.opacityMode": "Opacity Mode",
+  "text.autoconfig.parabola.option.arcStyle.opacityMode.@Tooltip[0]": "OPAQUE = fully solid, TRANSPARENT = semi-transparent, PULSING = animated fade.",
 
   "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha": "Impact Box Opacity (%)",
   "text.autoconfig.parabola.option.arcStyle.impactBoxAlpha.@Tooltip[0]": "Opacity of the filled box at the impact block (0 = invisible, 100 = solid).",
@@ -31,22 +54,22 @@
 
   "text.autoconfig.parabola.option.colors.bow": "Bow",
   "text.autoconfig.parabola.option.colors.bow.@Tooltip[0]": "Arc color for bow arrows.",
-
   "text.autoconfig.parabola.option.colors.crossbowArrow": "Crossbow — Arrow",
   "text.autoconfig.parabola.option.colors.crossbowArrow.@Tooltip[0]": "Arc color for crossbow arrows.",
-
   "text.autoconfig.parabola.option.colors.crossbowFirework": "Crossbow — Firework",
   "text.autoconfig.parabola.option.colors.crossbowFirework.@Tooltip[0]": "Arc color for crossbow firework rockets.",
-
   "text.autoconfig.parabola.option.colors.trident": "Trident",
   "text.autoconfig.parabola.option.colors.trident.@Tooltip[0]": "Arc color for tridents.",
-
   "text.autoconfig.parabola.option.colors.enderPearl": "Ender Pearl",
   "text.autoconfig.parabola.option.colors.enderPearl.@Tooltip[0]": "Arc color for ender pearls.",
-
   "text.autoconfig.parabola.option.colors.snowballEgg": "Snowball / Egg",
   "text.autoconfig.parabola.option.colors.snowballEgg.@Tooltip[0]": "Arc color for snowballs and eggs.",
-
   "text.autoconfig.parabola.option.colors.windCharge": "Wind Charge",
-  "text.autoconfig.parabola.option.colors.windCharge.@Tooltip[0]": "Arc color for wind charges."
+  "text.autoconfig.parabola.option.colors.windCharge.@Tooltip[0]": "Arc color for wind charges.",
+  "text.autoconfig.parabola.option.colors.fishingRod": "Fishing Rod",
+  "text.autoconfig.parabola.option.colors.fishingRod.@Tooltip[0]": "Arc color for fishing rod bobbers.",
+  "text.autoconfig.parabola.option.colors.splashPotion": "Splash / Lingering Potion",
+  "text.autoconfig.parabola.option.colors.splashPotion.@Tooltip[0]": "Arc color for splash and lingering potions.",
+  "text.autoconfig.parabola.option.colors.expBottle": "XP Bottle",
+  "text.autoconfig.parabola.option.colors.expBottle.@Tooltip[0]": "Arc color for experience bottles."
 }

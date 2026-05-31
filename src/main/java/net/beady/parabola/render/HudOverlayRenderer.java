@@ -185,6 +185,9 @@ public final class HudOverlayRenderer {
             case SNOWBALL          -> "Snowball";
             case EGG               -> "Egg";
             case WIND_CHARGE       -> "Wind Charge";
+            case FISHING_ROD       -> "Fishing Rod";
+            case SPLASH_POTION     -> "Splash Potion";
+            case EXP_BOTTLE        -> "XP Bottle";
         };
         return multishot ? base + " ×3" : base;
     }

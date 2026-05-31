@@ -23,7 +23,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +45,7 @@ public final class TrajectorySimulator {
                     return new TrajectoryResult(List.of(), null, 0, ProjectileType.TRIDENT, false, true, null);
                 }
             }
-            return buildResult(player, level, stack, ProjectileType.TRIDENT, 1.0f, false);
+            return buildResult(player, level, ProjectileType.TRIDENT, player.getLookAngle(), 1.0f, false);
         }
 
         // ── Bow ──────────────────────────────────────────────────────────────
@@ -54,7 +53,7 @@ public final class TrajectorySimulator {
             if (!player.isUsingItem()) return null;
             float pull = computeBowPull(player);
             if (pull < 0.01f) return null;
-            return buildResult(player, level, stack, ProjectileType.BOW, pull, false);
+            return buildResult(player, level, ProjectileType.BOW, player.getLookAngle(), pull, false);
         }
 
         // ── Crossbow ─────────────────────────────────────────────────────────
@@ -62,48 +61,66 @@ public final class TrajectorySimulator {
             ChargedProjectiles charged = stack.get(DataComponents.CHARGED_PROJECTILES);
             if (charged == null || charged.isEmpty()) return null;
 
-            boolean isFirework = charged.items().stream()
-                    .anyMatch(p -> p.is(Items.FIREWORK_ROCKET));
-            boolean multishot = hasEnchantment(stack, Enchantments.MULTISHOT);
+            boolean isFirework = charged.items().stream().anyMatch(p -> p.is(Items.FIREWORK_ROCKET));
+            boolean multishot  = hasEnchantment(stack, Enchantments.MULTISHOT);
 
             if (isFirework) {
                 return buildFireworkResult(player, level, charged, multishot);
             } else {
-                return buildResult(player, level, stack, ProjectileType.CROSSBOW_ARROW, 1.0f, multishot);
+                return buildResult(player, level, ProjectileType.CROSSBOW_ARROW, player.getLookAngle(), 1.0f, multishot);
             }
         }
 
         // ── Ender Pearl ───────────────────────────────────────────────────────
         if (stack.is(Items.ENDER_PEARL)) {
-            return buildResult(player, level, stack, ProjectileType.ENDER_PEARL, 1.0f, false);
+            return buildResult(player, level, ProjectileType.ENDER_PEARL, player.getLookAngle(), 1.0f, false);
         }
 
         // ── Snowball / Egg ────────────────────────────────────────────────────
-        if (stack.is(Items.SNOWBALL) || stack.is(Items.EGG)) {
-            return buildResult(player, level, stack, ProjectileType.SNOWBALL, 1.0f, false);
+        if (stack.is(Items.SNOWBALL)) {
+            return buildResult(player, level, ProjectileType.SNOWBALL, player.getLookAngle(), 1.0f, false);
+        }
+        if (stack.is(Items.EGG)) {
+            return buildResult(player, level, ProjectileType.EGG, player.getLookAngle(), 1.0f, false);
         }
 
         // ── Wind Charge ───────────────────────────────────────────────────────
         if (stack.is(Items.WIND_CHARGE)) {
-            return buildResult(player, level, stack, ProjectileType.WIND_CHARGE, 1.0f, false);
+            return buildResult(player, level, ProjectileType.WIND_CHARGE, player.getLookAngle(), 1.0f, false);
+        }
+
+        // ── Splash / Lingering Potion ─────────────────────────────────────────
+        if (stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION)) {
+            Vec3 dir = getPotionThrowDir(player);
+            return buildResult(player, level, ProjectileType.SPLASH_POTION, dir, 1.0f, false);
+        }
+
+        // ── Experience Bottle ─────────────────────────────────────────────────
+        if (stack.is(Items.EXPERIENCE_BOTTLE)) {
+            Vec3 dir = getPotionThrowDir(player);
+            return buildResult(player, level, ProjectileType.EXP_BOTTLE, dir, 1.0f, false);
+        }
+
+        // ── Fishing Rod ───────────────────────────────────────────────────────
+        if (stack.is(Items.FISHING_ROD) && player.fishing == null) {
+            return buildFishingRodResult(player, level);
         }
 
         return null;
     }
 
-    // ── Standard arc ─────────────────────────────────────────────────────────
+    // ── Build helpers ─────────────────────────────────────────────────────────
 
     private static TrajectoryResult buildResult(LocalPlayer player, ClientLevel level,
-                                                 ItemStack stack, ProjectileType type,
+                                                 ProjectileType type, Vec3 lookDir,
                                                  float speedScale, boolean multishot) {
         Vec3 origin = player.getEyePosition(1.0f);
-        Vec3 look   = player.getLookAngle();
         float speed = type.baseSpeed * speedScale;
 
         if (multishot) {
-            var center = simulateArc(origin, look.scale(speed),          type, level, player);
-            var left   = simulateArc(origin, rotateY(look, -10f).scale(speed), type, level, player);
-            var right  = simulateArc(origin, rotateY(look,  10f).scale(speed), type, level, player);
+            var center = simulateArc(origin, lookDir.scale(speed),           type, level, player);
+            var left   = simulateArc(origin, rotateY(lookDir, -10f).scale(speed), type, level, player);
+            var right  = simulateArc(origin, rotateY(lookDir,  10f).scale(speed), type, level, player);
 
             BlockPos impact = impactBlock(center.points());
             double dist = impact != null ? origin.distanceTo(Vec3.atCenterOf(impact)) : 0;
@@ -111,7 +128,7 @@ public final class TrajectorySimulator {
                     List.of(center.points(), left.points(), right.points()),
                     impact, dist, type, true, false, center.entityName());
         } else {
-            var result = simulateArc(origin, look.scale(speed), type, level, player);
+            var result = simulateArc(origin, lookDir.scale(speed), type, level, player);
             BlockPos impact = impactBlock(result.points());
             double dist = impact != null ? origin.distanceTo(Vec3.atCenterOf(impact)) : 0;
             return new TrajectoryResult(
@@ -144,6 +161,28 @@ public final class TrajectorySimulator {
         }
     }
 
+    private static TrajectoryResult buildFishingRodResult(LocalPlayer player, ClientLevel level) {
+        float xRot = player.getXRot();
+        float yRot = player.getYRot();
+        float h = Mth.cos(-yRot * Mth.DEG_TO_RAD);
+        float i = Mth.sin(-yRot * Mth.DEG_TO_RAD);
+        float j = -Mth.cos(-xRot * Mth.DEG_TO_RAD);
+        float k = Mth.sin(-xRot * Mth.DEG_TO_RAD);
+
+        Vec3 eyePos = player.getEyePosition(1.0f);
+        Vec3 origin = new Vec3(eyePos.x - i * 0.3, eyePos.y, eyePos.z - h * 0.3);
+
+        Vec3 rawVel = new Vec3(-i, Mth.clamp(-(double)(k / j), -5.0, 5.0), -h);
+        double len = rawVel.length();
+        Vec3 vel = len > 0 ? rawVel.scale(0.6 / len + 0.5) : rawVel;
+
+        var result = simulateArc(origin, vel, ProjectileType.FISHING_ROD, level, player);
+        BlockPos impact = impactBlock(result.points());
+        double dist = impact != null ? origin.distanceTo(Vec3.atCenterOf(impact)) : 0;
+        return new TrajectoryResult(
+                List.of(result.points()), impact, dist, ProjectileType.FISHING_ROD, false, false, result.entityName());
+    }
+
     // ── Simulation loops ─────────────────────────────────────────────────────
 
     private record ArcResult(List<Vec3> points, String entityName) {}
@@ -157,16 +196,14 @@ public final class TrajectorySimulator {
         for (int tick = 0; tick < MAX_TICKS; tick++) {
             points.add(pos);
 
-            // Physics: water slows projectiles (no gravity, higher drag)
             boolean wet = type.isAffectedByWater() && inWater(level, pos);
             if (wet) {
-                vel = vel.scale(type.waterDrag); // no gravity in water
+                vel = vel.scale(type.waterDrag);
             } else {
                 vel = new Vec3(vel.x, vel.y - type.gravity, vel.z).scale(type.drag);
             }
             Vec3 next = pos.add(vel);
 
-            // Block collision (fluid not treated as solid)
             BlockHitResult hit = level.clip(new ClipContext(
                     pos, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
             if (hit.getType() != HitResult.Type.MISS) {
@@ -174,12 +211,10 @@ public final class TrajectorySimulator {
                 break;
             }
 
-            // Entity collision — check every 5 ticks to keep simulation cheap
             if (tick % 5 == 0) {
-                Vec3 mid = pos.lerp(next, 0.5);
-                String entityHit = checkEntityHit(level, player, mid);
+                String entityHit = checkEntityHit(level, player, pos.lerp(next, 0.5));
                 if (entityHit != null) {
-                    points.add(mid);
+                    points.add(pos.lerp(next, 0.5));
                     return new ArcResult(points, entityHit);
                 }
             }
@@ -197,12 +232,7 @@ public final class TrajectorySimulator {
 
         for (int tick = 0; tick < lifetime && tick < MAX_TICKS; tick++) {
             points.add(pos);
-            // In water: slow down; in air: accelerate
-            if (inWater(level, pos)) {
-                vel = vel.scale(0.6);
-            } else {
-                vel = vel.scale(1.15);
-            }
+            vel = inWater(level, pos) ? vel.scale(0.6) : vel.scale(1.15);
             Vec3 next = pos.add(vel);
 
             BlockHitResult hit = level.clip(new ClipContext(
@@ -212,10 +242,9 @@ public final class TrajectorySimulator {
                 break;
             }
 
-            Vec3 mid = pos.lerp(next, 0.5);
-            String entityHit = checkEntityHit(level, player, mid);
+            String entityHit = checkEntityHit(level, player, pos.lerp(next, 0.5));
             if (entityHit != null) {
-                points.add(mid);
+                points.add(pos.lerp(next, 0.5));
                 return new ArcResult(points, entityHit);
             }
 
@@ -226,19 +255,26 @@ public final class TrajectorySimulator {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /** Returns a throw direction with a pitch offset (negative = more upward). */
+    private static Vec3 getPotionThrowDir(LocalPlayer player) {
+        float pitch = player.getXRot();
+        float yaw   = player.getYRot();
+        float kx = -Mth.sin(yaw   * Mth.DEG_TO_RAD) * Mth.cos(pitch * Mth.DEG_TO_RAD);
+        float ky = -Mth.sin((pitch - 20.0f) * Mth.DEG_TO_RAD);
+        float kz =  Mth.cos(yaw   * Mth.DEG_TO_RAD) * Mth.cos(pitch * Mth.DEG_TO_RAD);
+        return new Vec3(kx, ky, kz).normalize();
+    }
+
     private static boolean inWater(ClientLevel level, Vec3 pos) {
         return level.getFluidState(BlockPos.containing(pos)).is(FluidTags.WATER);
     }
 
     private static String checkEntityHit(ClientLevel level, LocalPlayer player, Vec3 pos) {
-        AABB searchBox = AABB.ofSize(pos, 0.8, 1.8, 0.8);
+        AABB box = AABB.ofSize(pos, 0.8, 1.8, 0.8);
         List<LivingEntity> entities = level.getEntitiesOfClass(
-                LivingEntity.class, searchBox,
+                LivingEntity.class, box,
                 e -> e != player && !e.isSpectator() && e.isAlive());
-        if (!entities.isEmpty()) {
-            return entities.get(0).getDisplayName().getString();
-        }
-        return null;
+        return entities.isEmpty() ? null : entities.get(0).getDisplayName().getString();
     }
 
     private static float computeBowPull(LocalPlayer player) {
@@ -272,14 +308,12 @@ public final class TrajectorySimulator {
 
     private static Vec3 rotateY(Vec3 v, float angleDeg) {
         float rad = angleDeg * Mth.DEG_TO_RAD;
-        float cos = Mth.cos(rad);
-        float sin = Mth.sin(rad);
+        float cos = Mth.cos(rad), sin = Mth.sin(rad);
         return new Vec3(v.x * cos + v.z * sin, v.y, -v.x * sin + v.z * cos);
     }
 
     private static BlockPos impactBlock(List<Vec3> arc) {
         if (arc.isEmpty()) return null;
-        Vec3 last = arc.get(arc.size() - 1);
-        return BlockPos.containing(last);
+        return BlockPos.containing(arc.get(arc.size() - 1));
     }
 }
